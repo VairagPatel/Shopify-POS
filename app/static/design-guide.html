@@ -1,0 +1,275 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Eluno — HLD & LLD</title><style>
+    *{box-sizing:border-box}body{margin:0;background:#f7f5ed;color:#213b35;font:17px/1.75 system-ui,sans-serif}header{background:#213b35;color:#fff;padding:48px max(24px,calc((100% - 1080px)/2))}header p{color:#e6e8da}nav{position:sticky;top:0;background:#edf0e5;padding:14px 24px;display:flex;gap:24px;flex-wrap:wrap;border-bottom:1px solid #ccd3c5}a{color:#ad541d}main{max-width:1080px;margin:auto;padding:28px 24px}h1{font-size:clamp(28px,4vw,46px);line-height:1.2}h2{margin-top:40px;border-top:1px solid #d4d8ca;padding-top:24px;font-size:25px}p{overflow-wrap:anywhere}section{scroll-margin-top:85px}button{background:#b95d21;color:white;border:0;padding:10px 18px;cursor:pointer}.diagram{padding:24px;background:#e9ede2;text-align:center;margin:28px 0}.diagram div{background:white;padding:14px;border:1px solid #c7cebd;border-radius:6px}.diagram b{display:block;margin:8px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#203a34;color:#fff;padding:20px;font:13px/1.65 monospace}details{border:1px solid #c7cebd;padding:18px;margin:20px 0}summary{cursor:pointer;font-weight:700}.note{border-left:5px solid #f88e2b;padding:14px 22px;background:#fff0dc}@media print{nav,button{display:none}body{background:white;font-size:11pt}header{padding:12px;background:white;color:#213b35}header p{color:#213b35}main{padding:0}h2{break-after:avoid}pre{background:#eee;color:black}section{break-before:page}}
+    </style><header><small>ELUNO STORE STUDIO · TECHNICAL DESIGN</small><h1>How the system fits together.<br>How each operation works.</h1><p>HLD for the system view. LLD for the implementation view.<br>Problem-led design · 26 October 2026</p></header><nav><a href="#hld">High-Level Design</a><a href="#lld">Low-Level Design</a><a href="api-schema-guide.html">Detailed API schemas</a><button onclick="document.querySelectorAll('details').forEach(x=>x.open=true);window.print()">Print / Save PDF</button></nav><main><p class="note">Implemented evaluation demo using local mocks. Production proposals and limitations are explicitly labelled. Customer registration remains proposed.</p><div class="diagram"><div>Frontend / Swagger</div><b>↓ Same API contracts</b><div>FastAPI · Authentication · Role/store checks</div><b>↓</b><div>Sale · Clinical · Offers · Tax · Refund · Reports</div><b>↙ Durable state &nbsp; ↘ External calls</b><div>SQLite &nbsp; | &nbsp; OperationsGateway → Shopify / SMT / Terminal mocks</div></div><section id="hld"><h1>Eluno billing platform — detailed problem-led HLD</h1>
+<p>Snapshot: 26 October 2026. Final submission updates and test evidence: docs/FINAL_REQUIREMENT_AUDIT.md. Audience: founder, product, tech lead, retail, optometry, finance and operations. IMPLEMENTED means tested demo behavior against supplied mocks. PROPOSED means a production design or policy that has not been implemented or approved. OPEN means stakeholder input is required.</p>
+<h2>1. Problem statement</h2>
+<p>Eluno must replace the app at the till while retaining Shopify as its system of record. The brief describes seven Bengaluru stores, about 350–400 daily walk-ins across them, about 120 bills and an average bill near ₹5,400. Frames are stocked by location; prescription lenses are made to order. The website and finance continue to rely on Shopify.</p>
+<p>Current pain points are manual discounts, clinical mistakes, multiple family bills, weak drawer tracking, unclear sales channels and unreliable reconciliation. Interruptions can leave staff unsure whether a payment or order succeeded. The solution must improve the whole transaction, not only the screen.</p>
+<p>Success means a clinically valid and correctly priced bill becomes a traceable payment and source order; returns reverse the correct money, tax and stock; staff can recover safely; finance and leadership see consistent results. The requested 15 November launch is a business deadline, not evidence that live readiness has been achieved.</p>
+<h2>2. Proposed solution and scope</h2>
+<p>Use one modular billing application shared by the frontend and Swagger. It reads customers/catalog/stock from the Shopify mock, prescriptions/staff from the store tool, applies local rules, persists intent, charges the terminal and writes the order/transaction back to Shopify. Reporting reads source orders and refunds rather than treating local checkout rows as the financial ledger.</p>
+<p>Exercise Must scope: customer and valid Rx lookup; validated frame/lens cart; configured offers; inclusive GST by line; payment then source order with store invoice; full refund with correct tax/restock; store day-end from source orders. UI is optional in the exercise but useful for explaining the process. The newer assignment email&#x27;s 72-hour submission window supersedes the older pack&#x27;s 48 hours.</p>
+<p>Implemented extensions include family billing, roles, local clinical entry, manager controls, lens-only remakes, cash expenses/close, central reports, printable documents, audit and notification outbox. Deferred work includes live integrations, customer registration, partial refunds, full online-pickup fulfilment, guaranteed offline payment, queue-tool edits and camera repair. A selected sales-channel label does not implement an entire omnichannel order lifecycle.</p>
+<h2>3. Stakeholder requirement map</h2>
+<p>Founder: retain Shopify, show priority/campaign context, complete billing quickly, roll out seven stores and send the 10 am digest. Design response: source write-back, source context on billing, measured workflow timings, central reporting and durable notification jobs. Live performance and rollout are not proven by the demo.</p>
+<p>Retail: stack offers, authorize up to 10% manager discount without a slow approval chain, bill a family together, report channels and record drawer expenses. Design response: configured pricing engine, authenticated manager identity/reason, wearer-specific lines, order channel metadata and local cash records. Exact offer stacking still requires agreement.</p>
+<p>Optometry: block incompatible lens choices, use five-degree entry increments and support remakes without a frame charge. Design response: server-side clinical checks before payment, validated new entry and lens-only remake flow. Historical prescriptions must not be silently rounded.</p>
+<p>Finance: HSN/effective-date tax, inclusive MRP, separate store invoice series, auditable discounts, source refunds and day-end reconciliation. Design response: integer-paise calculations, line snapshots, durable invoice register, original-tax reversal and source-derived reports. Legal documents and production finance policy still need approval.</p>
+<p>Ops: restore returned frames to the original store, never restock custom lenses, avoid frame stock changes on remake, survive interrupted bills without duplicates. Design response: location-aware refund payloads, lens-only transactions and persisted pending/uncertain states. Seamless recovery from every terminal outcome is not implemented.</p>
+<p>Separate owners: the beverage question belongs to the queue-tool team; the camera issue belongs to facilities/vendor support. Track them explicitly without presenting them as POS completion.</p>
+<h2>4. Conflicts and policy decisions</h2>
+<p>Speed versus audit: an authorized manager approves directly within the limit using their session and a reason. No separate approval chain is necessary, but a cashier cannot supply a manager&#x27;s name as authorization.</p>
+<p>Stacking versus margin: Meena and Vikram must approve the eligible items, application order, caps, second-pair definition and manager interaction for festive 10%, second-pair 50% and priority ₹500. The current engine follows supplied rules; it does not promise every offer always combines.</p>
+<p>Ten seconds versus dependency time: agree what starts and stops the clock. A proposed p95 under ten seconds for an already prepared cart is a measurement proposal, not the same as an absolute ten-second promise. Report tail latency and failures, and agree whether customer terminal interaction counts.</p>
+<p>Gapless invoices versus abandoned bills: retain reserved, issued and cancelled allocations, never recycle numbers. Finance must approve fiscal resets and document rules. Counting only successful sales cannot demonstrate a complete invoice series.</p>
+<p>Clinical convenience versus exact records: five-degree input must not rewrite imported clinical facts. Dr. Iyer decides historical Rx handling, validity and remake approval. Customer registration, family-shared phones and phone changes also need explicit identity policy.</p>
+<h2>5. Actors and system boundaries</h2>
+<p>Cashier: build and complete permitted store bills. Manager: controlled overrides and remakes. Optometrist: clinical entry. Finance: reporting, registers and reconciliation. Admin: central administration. Store access is enforced in the backend, even when callers edit request bodies or URLs. A future founder-only read role should not automatically receive admin powers.</p>
+<p>The customer is not a staff account. One payer can pay for several wearers. Every lens must keep its wearer&#x27;s Rx association, rather than inheriting the payer&#x27;s prescription.</p>
+<p>Browser UI / Swagger → API authentication, CSRF and role/store checks → business services → persistence and external ports → Shopify, store tool and terminal adapters. A scheduler reads/writes the email outbox and sends through configured SMTP. The browser and every external response are validation boundaries.</p>
+<h2>6. Logical architecture</h2>
+<p>Presentation: frontend cart, clinical selection, invoice, report and exception views. Swagger demonstrates the same contracts. Clients display results; they do not authoritatively calculate the final price or grant roles.</p>
+<p>Application layer: sale preparation/completion, refund, remake, till and reporting use cases. It orders side effects and records recoverable state. Pure domain functions handle clinical suitability, offers and tax without network calls.</p>
+<p>Ports: SaleGateway, RefundGateway, ReportingGateway, CommerceGateway, StoreToolGateway and TerminalGateway define the methods actually available to orchestration. MockHTTP implements transport; OperationsGateway adds locally authored clinical records. Constructor injection lets tests supply an alternate implementation.</p>
+<p>Persistence: SQLite stores workflow state, quotes, invoice allocation, authentication, local clinical records, till operations, audit and outbox. The demo does not use separate independently deployed microservices or distributed databases.</p>
+<p>Current architecture qualification: gateway methods still exchange provider-shaped dictionaries, and some services assemble source payloads or access persistence details. These are active adapter contracts, not full provider independence. Proposed next step: typed domain DTOs plus explicit persistence ports and move provider serialization entirely into adapters.</p>
+<h2>7. Data ownership and synchronization</h2>
+<p>Shopify owns source customer identifiers, catalog, location inventory, orders, recorded payment transactions and refunds. The store tool owns existing source prescriptions and staff records. The terminal executes payments. Our application owns local workflow state, offers/tax configuration, store invoice allocation, cash operations and notification jobs. Locally entered Rx currently forms an overlay; its eventual clinical system of record is an open integration decision.</p>
+<p>Synchronization means read source context → validate/calculate locally → execute payment → write source order → read source order for receipt/report/refund. It is not a full continuous mirror of Shopify. No generic bidirectional customer synchronization or production webhook processing is claimed.</p>
+<p>Proposed live synchronization uses authenticated provider events, deduplication, processing checkpoints and scheduled reconciliation. Specify pagination, update ordering, freshness and deletion policies. A source event should trigger verified processing, not override local financial state without checks.</p>
+<h2>8. Conceptual information model</h2>
+<p>Customer payer → checkout → quote lines → wearer / frame-lens pair / prescription. Checkout → store invoice allocation, payment reference, Shopify order reference and full refund attempt. Store → till session → expenses and closing count. User → sessions, saved draft and audit. Outbox → message state and delivery result.</p>
+<p>Different identifiers answer different questions: customer_id identifies a source person; rx_id a clinical record; checkout_id a workflow; payment_ref a payment attempt context; invoice_no a store document; shopify_order_id a source sale; refund_id a local reversal. Keep these separately linked. Conceptual links are not a claim that every relationship is a SQL foreign key.</p>
+<p>The current database has 16 table declarations and stores some snapshots as JSON. It does not normalize all Shopify masters into local tables. A complete schema/endpoint inventory is available in the companion API/schema guide.</p>
+<h2>9. Customer and phone flow</h2>
+<p>POST /api/customers receives a JSON phone body, never a phone query from the current frontend. Supported ten-digit, +91, 91-prefixed and domestic-zero input formats normalize to one +91 representation. Existing-customer lookup returns customer plus source/local prescriptions; no match returns 404. The retired GET method returns 405.</p>
+<p>The default upstream wrapper also uses body-based lookup. These are demo extensions, not official Shopify routes. Explicit legacy adapter mode still uses upstream query parameters and is not privacy-equivalent. A live provider needs an approved contract; a URL change alone is not a live integration.</p>
+<p>Normalization solves formatting differences, not identity ownership. Historical imports are not silently rewritten. Shared family numbers, duplicate profiles, phone changes and OTP policy require design. Customer creation remains proposed, as requested. Phone remains sensitive in authorized responses/storage; TLS, restricted body logs and retention controls are production work.</p>
+<h2>10. Family cart and prescription flow</h2>
+<p>Resolve payer and each wearer; select source variants; identify the latest valid prescription for each lens; validate sphere/cylinder/ADD and expiry; associate wearer, Rx and pair with the correct line; block invalid combinations before payment with an actionable message.</p>
+<p>Example: one parent pays for three family members. The bill has three pairs, with three distinct Rx associations. A progressive lens lacking required ADD is rejected even if the other wearers are valid. Changing the lens requires a new validated quote, not a local screen-only total change.</p>
+<p>Frame stock is location-specific; lens metadata determines compatibility. A saved cart or quote is not an inventory reservation. Stock must be rechecked before payment, and production must address concurrent store/website demand rather than assuming a recheck is an atomic lock.</p>
+<h2>11. Pricing and tax flow</h2>
+<p>Read GST-inclusive source MRP → evaluate dated offers and stacking → validate any manager override → allocate discounts to lines → apply effective HSN rate → split taxable amount and CGST/SGST → persist totals and source payload before payment.</p>
+<p>Invariant: each line&#x27;s taxable + CGST + SGST equals line payable exactly; invoice payable equals summed lines. Integer paise and deterministic rounding avoid binary float money errors. Rate/offer data remains in configuration rather than constants; central constants describe application policies, not current GST rates.</p>
+<p>Illustrative arithmetic only: ₹2,240 inclusive at an assumed 12% plus ₹1,180 at an assumed 18% gives ₹3,420 payable, ₹3,000 taxable and ₹420 tax. A permitted 10% on both becomes ₹3,078 payable, ₹2,700 taxable and ₹378 tax. Actual rates come from configured HSN data; these are teaching inputs, not tax advice or fixture claims.</p>
+<p>Proposed production controls: approved promotion examples, configuration versioning, change review, quote expiry and explicit repricing rules. Refunds use original line tax, not today&#x27;s rate.</p>
+<h2>12. Payment and order sequence</h2>
+<p>Prepare: resolve source records, validate cart and clinical rules, compute prices, reserve store invoice, persist quote and return checkout ID. Complete: load quote, recheck stock, save payment intent, claim the draft state, charge terminal or record cash, persist payment result, create Shopify order/transaction, save source ID, mark completed and present receipt.</p>
+<p>Normal state path is draft → payment_pending → payment_captured → order_pending → order_recorded. Payment captured is not a completed source sale. Repeating completion of an already recorded checkout returns saved state; other started states require inspection instead of a second charge.</p>
+<p>Source order includes line items, tax, discounts, clinical line properties, source location, invoice and checkout references, channel, staff and successful payment transaction. Multiple local writes and provider calls are involved; there is no distributed atomic transaction. A crash between steps can leave a pending state requiring recovery.</p>
+<h2>13. Failure and recovery architecture</h2>
+<p>Read failure before payment: stop safely and retry supported transient GET failures within bounded limits. The current private lookup POST is read-like but is not automatically retried by the generic GET-only retry policy.</p>
+<p>Charge timeout: payment_uncertain; block automatic recharge. Order timeout after capture: order_uncertain; search source orders by checkout reference. One match resolves, none remains uncertain, several require manual review. Browser disconnect: reload checkout state rather than inventing a replacement sale.</p>
+<p>Source refund timeout: reconcile by refund reference without repeating terminal refund. SMTP uncertainty: mark for review rather than blindly send twice. Process crash: use durable references and states; some repairs remain operational rather than fully automatic.</p>
+<p>The supplied terminal does not guarantee idempotency just because a reference is supplied. Proposed live recovery requires provider-supported idempotency and status lookup, signed outcome events, aging-state monitoring and an approved staff runbook. Do not claim exactly-once behavior across all systems from local uniqueness constraints alone.</p>
+<h2>14. Invoice allocation and refund design</h2>
+<p>Reserve store invoice numbers under a serialized local transaction. Reuse the same allocation for the same checkout; never recycle numbers. Preserve reserved/issued/cancelled entries. Finance approves fiscal-year series, issuance timing, cancellation reasons, credit-note numbering and immutable document details. Issuance and source completion occur in separate steps, so recovery must verify both.</p>
+<p>Full refund: read original recorded source order, calculate refund lines/tax, verify amount, persist attempt, refund terminal/cash, create source refund and save references. Frames return to the original billing location; custom lenses use no-restock. An HSR sale must not send frame stock to HQ by default. Original tax is reversed even after rates change.</p>
+<p>The demo supports one full refund attempt per checkout; partial returns require a remaining-line-quantity/amount model. Refund-day collections and original-sale cohort views must be labelled separately. Shopify reconciliation does not replace bank/terminal settlement comparison.</p>
+<h2>15. Remake and lab boundary</h2>
+<p>Resolve original sale and wearer, capture reason/replacement lens/cost owner, validate the replacement Rx and prepare a lens-only transaction. Do not create a frame line or reserve frame stock. Recording an external optometrist as cost owner is not automatic collection from that party.</p>
+<p>Clinical, ops and finance must agree reason-specific approvals, customer contribution, lab instructions, disposal and zero-charge document treatment. Full lab/QC/dispatch orchestration belongs to its own system; the till carries the necessary references and approved instruction data.</p>
+<h2>16. Cash drawer and store close</h2>
+<p>Open with counted float, account for cash sales/refunds and recorded paid-out expenses, calculate expected drawer balance and compare with physical count. Absolute variance over ₹200 queues finance notification. Exactly ₹200 is not over the threshold. Reasoned paid-ins now have their own additive table, API action and frontend movement selector, with regression tests.</p>
+<p>Unresolved financial states block a misleading close in the demo. Proposed operations assign a manager to investigation and finance to approval of corrections. No adjustment should fabricate a balanced drawer without actor/reason evidence.</p>
+<p>Reconcile the same location, Asia/Kolkata business day, refund-date definition and payment-method population. Agree treatment of late source records and post-close corrections. Source matching does not prove bank settlement, fees or chargebacks have reconciled.</p>
+<h2>17. Central reporting and email</h2>
+<p>Display combined totals as well as store breakdowns. Sum amounts and bill counts. Compute combined average bill value as combined sales divided by combined count, not an unweighted average of store averages. Two bills worth ₹10,000 in one store and one worth ₹8,000 elsewhere produce ₹18,000, three bills and ₹6,000 average.</p>
+<p>The demo reads source orders and refuses to certify a report when the bounded mock order cap is reached. Proposed production needs full pagination or a reconciled reporting store, freshness timestamps and missing-store warnings. Missing data is not zero sales.</p>
+<p>The daily digest targets 10:00 Asia/Kolkata and can catch up after that time when its process runs. Outbox delivery requires configured sender, recipients and SMTP. SMTP acceptance is not proof of inbox arrival. Production needs worker coordination, delivery monitoring and an agreed escalation policy.</p>
+<h2>18. Security and deployment</h2>
+<p>Implemented: password hashing, sessions, login throttling, CSRF and server-side role/store checks. Proposed: production TLS/cookie settings, secret rotation, minimum integration scopes, privileged-user policy, restricted backups, retention and body/APM log controls. Keep runtime credentials and sensitive snapshots out of Git.</p>
+<p>Current deployment is one laptop/browser, one FastAPI application and scheduler, SQLite and local durable mocks. Proposed deployment is seven store clients and central users accessing a shared application/database, external adapters and coordinated workers. PostgreSQL is a possible future database, not an existing dependency.</p>
+<p>Do not run independent local databases and call them a centralized multi-store system. In-process locks do not coordinate multiple workers. Multi-instance deployment needs shared transaction/state claims, scheduler ownership and tested invoice allocation. Keep the monolith modular until scale justifies additional services.</p>
+<h2>19. Performance, observability and support</h2>
+<p>Daily averages do not define peak capacity. Measure simultaneous confirmations, cart sizes, provider latency and website stock competition. Break timing into preparation, final validation, terminal interaction, source order and receipt. Prefetch stable data with freshness policies, but do not display a completed sale before its outcome is known just to improve timing.</p>
+<p>Proposed telemetry correlates checkout, payment, invoice, store and source IDs without broad phone/clinical logs. Alert on aging pending/uncertain states, unmatched orders/refunds, invoice-register differences, stale reports and notification failures. Availability, recovery-time and recovery-point objectives remain business decisions, not measured promises.</p>
+<p>Runbooks must name owners: store manager handles the customer, finance reconciles money/documents, ops resolves stock/lab issues and engineering investigates integrations. Never resolve unknown payment by deleting its checkout and charging again. Backup readiness requires a restore drill preserving state and invoice history together.</p>
+<h2>20. SOLID and ports-and-adapters assessment</h2>
+<p>Single responsibility: tax, offers, clinical validation, transport, shared money and shared errors have clear modules. The web module and sale orchestration still have multiple responsibilities; extraction of mapping and repository operations is the next improvement.</p>
+<p>Open/closed: configured rates/offers change without ordinary code edits, and injected gateways allow alternate implementations. New offer families or providers can still require changes; this is not unlimited plug-in capability.</p>
+<p>Liskov substitution: active Protocol contracts match adapter method names and are checked by tests. Runtime Protocol checks only verify member presence, not full behavior or type correctness. Alternate adapters must pass semantic contract tests for retries, money and uncertainty.</p>
+<p>Interface segregation: sale, refund and reporting ports expose different required capabilities. Dependency inversion: services use those ports and domain errors rather than importing HTTP/SQLite error implementations. Complete hexagonal separation is still pending because provider-shaped dictionaries and concrete persistence access remain.</p>
+<p>Naming means clear domain terms, not guessing whether a name looks AI-generated. Price-loop variables now identify variants, decisions, properties and line positions. Avoid cosmetic renaming of stable external fields or database columns without migration. Shared policy constants have one module; tax/offer records remain their own configuration data.</p>
+<h2>21. Delivery lifecycle and work packages</h2>
+<p>Requirements: map every stakeholder request, identify conflicts and assign decision owners. Design: document authority, APIs, states, invariants and failure recovery. Implementation: deliver the Must vertical flow, then justified extras. Verification: unit math/clinical tests, adapter tests, API authorization, browser/Swagger journeys and fault cases. Release: review changes, regenerate docs, provision secrets and prove deployment. Operations: monitor, reconcile, patch and restore-test.</p>
+<p>Proposed work packages are scope/policy; source contracts; identity/access; clinical family cart; pricing/tax; payment/invoice; refund/remake; till/reconciliation; reports/email; recovery/observability; pilot; expansion. These are planning divisions, not a claim that historical Jira tickets exist. Each package needs an owner, acceptance examples and evidence.</p>
+<p>Definition of done: documented behavior and known gaps, relevant passing tests, reviewed API/schema changes, no new privacy leak, repeatable run instructions, approved financial side effects and observable errors. Production done additionally needs live sandbox contracts, security/restore checks, business UAT and support ownership. Do not label a mock test as live-provider certification.</p>
+<h2>22. Validation and rollout gates</h2>
+<p>Demonstrate family bill with separate Rx, invalid lens rejection, denied cashier override, valid manager reason, exact tax rounding, repeated confirmation, interruption after charge, refund to original store, lens-only remake, cancelled invoice, drawer variance and central totals. Test no-phone URLs and equal results across supported phone formats. Include store isolation and source-report cap failures.</p>
+<p>The previous recorded full suite passed 333 tests plus a private-wrapper browser check. The current refactor has its own test record in engineering review notes; these are demo evidence, not production latency or legal certification.</p>
+<p>Pilot entry requires approved policies, real mappings and integration contracts, observable failures, trained users and a recovery runbook. Pilot exit requires an agreed observation period with no unexplained payments/orders, invoice positions or reconciliation differences. Thresholds and duration must be agreed rather than invented.</p>
+<p>Expand store by store. Rollback routes new sales to an agreed fallback while preserving and resolving in-flight operations. It must not restore an old database over captured money or erase invoice history. Finance and ops coordinate old/new till usage to avoid duplicate billing.</p>
+<h2>23. Open decisions and presentation path</h2>
+<p>Rohan/Priya own timing definition and rollout gates; Meena/Vikram own stacking and overrides; finance owns fiscal documents, reporting cutoff and settlement; Dr. Iyer owns clinical rules and remake authorization; ops owns lab and stock procedures; integration owners confirm live API/payment guarantees; security/operations own privacy, retention, devices, recipients and recovery objectives.</p>
+<p>Presentation: start with the broken store workflow; show source customer and Rx; show clinical/cart/offer/tax decisions; confirm payment and connect local checkout, invoice and source order; demonstrate refund and correct stock; show combined reporting; finish with uncertain recovery and remaining live work. Use Swagger to show the same backend flow without the frontend.</p>
+<p>References: exercise-pack/brief/CANDIDATE_BRIEF.md, exercise-pack/brief/STAKEHOLDER_THREAD.md, the assignment email, STAKEHOLDER_REPLY.md, docs/LLD.md, docs/EXERCISE_MUST_AUDIT.md and the API/schema guide. This HLD is an explanation and proposal, not stakeholder sign-off.</p></section><section id="lld"><h1>Low-Level Design — Eluno Store Studio</h1>
+<p>Read the HLD first. This document maps the design to current modules and persisted contracts. The generated API/schema guide is the companion field-level reference.</p>
+<h2>1. Module responsibilities
+app/main.py: FastAPI setup, request models and sale/refund orchestration routes.
+app/web.py: frontend, authentication routes, operational APIs and authorization middleware.
+app/security.py: password hashing, session validation, user provisioning, role/store guards and operational table initialization.
+app/services/sale.py: prepare, complete, source-order write and order reconciliation.
+app/services/refunds.py: full-refund preparation, completion and source reconciliation.
+app/services/prescriptions.py: latest valid Rx selection and lens compatibility checks.
+app/services/offers.py and taxes.py: offer evaluation and inclusive-GST arithmetic.
+app/services/reporting.py and app/operations.py: source-based reporting, local Rx overlay, tills, audit and digest construction.
+app/persistence/sqlite.py: durable state, compare-and-set transitions and serialized invoice reservation.
+app/gateways/http.py: mock HTTP contracts and GatewayError classification.
+app/customer_schemas.py and phone.py: typed customer/clinical inputs and canonical phone validation.
+app/scheduler.py: digest scheduling and email outbox delivery.
+app/static/app.js: browser workflow; it calls APIs rather than owning authoritative pricing.
+scripts/persistent_mock.py: durable source snapshot and private lookup extensions.</h2>
+<h2>2. Identity and prescription linkage
+POST /api/customers accepts {&quot;phone&quot;:&quot;9000000005&quot;}. CustomerLookupRequest applies PhoneNumber validation. normalize_phone returns +919000000005. Accepted forms include ten local digits, 91-prefixed digits, +91 and a leading domestic zero with supported separators. Non-string JSON, foreign or malformed numbers are rejected.</h2>
+<p>The handler uses OperationsGateway: the source customer lookup returns CustomerRecord; prescriptions are source records plus the local clinical overlay. CustomerLookupResponse contains customer and prescriptions. No source match returns 404. GET /api/customers is retired and returns 405.</p>
+<p>Source/local prescription records retain rx_id, customer_id, canonical phone, issue date, valid_until and right/left eye values (od/os). The current lookup association is phone-based; it is not a normalized customer foreign-key design. Clinical creation is POST /api/prescriptions and requires the optometrist role (admin override follows the shared guard). EyeInput validates sphere/cylinder bounds, axis five-degree steps and ADD bounds.</p>
+<p>Sale preparation selects the latest unexpired prescription and adapts it to Prescription/EyePower. Each lens CartLine carries prescription_id; wearer selections determine whose prescription is used. CartLine pair_ref associates a frame and lens within that wearer. Source order line properties carry the billing/clinical trace information. Historical records are not bulk-normalized by this change.</p>
+<p>Proposed only: POST /api/customer-registrations, source customer creation, duplicate detection and eventual stable-customer-ID clinical joins. Shared-family-phone policy, phone changes and ownership verification need decisions before implementation.</p>
+<h2>3. Sale prepare algorithm
+Normalize payer and wearer phones → resolve store location → verify customers and staff → validate variants and wearer pairing → check stock and prescriptions → evaluate offers and authorized override → calculate line tax/totals → reserve invoice and persist quote → return checkout identifier and calculated result.</h2>
+<p>PrepareRequest contains phone, store_code, staff_id, variant_ids, payment_method, channel, optional checkout_id/reason_code/override_bps and members. Payment methods are upi/card/cash. Channels are walk_in/whatsapp/online_pickup. Do not trust a client-supplied role or price. Existing server middleware and service checks enforce the actual user&#x27;s access.</p>
+<p>Money is represented in integer paise; basis points express percentage inputs. Source decimal money strings convert through Decimal. Inclusive-tax splitting separates taxable value and tax from discounted gross; invoice totals sum the line results. Offer priority and stackability follow implemented rule data, not unrestricted stacking of every stakeholder example.</p>
+<p>The persisted quote contains the source order payload and payment amount/method. Completion loads this quote rather than accepting a new client price. A quote does not reserve source stock.</p>
+<h2>4. Checkout state machine and side effects
+Normal: draft → payment_pending → payment_captured → order_pending → order_recorded.
+Charge GatewayError: payment_pending → payment_uncertain.
+Order GatewayError: order_pending → order_uncertain.
+Order reconciliation: one reference match → order_recorded; multiple → reconciliation_required; zero → remain order_uncertain.
+Cancellation is a guarded operational action; do not treat every non-final state as safely cancellable.</h2>
+<p>complete(checkout_id) returns saved state when already order_recorded; any other non-draft state is blocked for inspection. Before payment, it rechecks aggregate inventory demand. It persists payment_ref = elu-checkout-&lt;checkout_id&gt; and changes draft to payment_pending conditionally. Cash uses a cash reference; a zero amount uses a no-charge reference; otherwise the terminal receives a charge call.</p>
+<p>After capture it stores payment_charge_id, records payment_captured, changes to order_pending and sends a source order payload with the successful transaction. It saves shopify_order_id, marks order_recorded and updates the invoice allocation to issued. These are several durable steps, not one cross-system atomic commit; a crash between them can require reconciliation or repair.</p>
+<p>reconcile_order reads source orders and matches note_attributes.checkout_id. It never automatically POSTs another order. The payment reference helps tracing but cannot manufacture provider-side exactly-once guarantees. Unknown terminal results require investigation; the current demo has no universal automatic payment recovery path.</p>
+<h2>5. Invoice and concurrency design
+invoice_series holds store_code, prefix and next_number. reserve_invoice uses BEGIN IMMEDIATE to serialize allocation, reuses an existing checkout allocation, inserts invoice_allocations and advances the sequence in one local transaction. Unique store/serial and checkout constraints prevent duplicate allocation. Reserved or cancelled numbers remain auditable and are not recycled.</h2>
+<p>change_status updates only WHERE checkout_id=? AND status=&lt;expected&gt;. A lost concurrent claim becomes StateConflict. Unique payment_ref and shopify_order_id prevent conflicting local reference assignment. This protects local state; it does not lock external inventory or create a distributed transaction. SQLite connections use a 15-second busy timeout. Declared SQL relationships must not be confused with complete cross-system referential enforcement.</p>
+<h2>6. Full-refund state machine
+prepared → terminal_pending → terminal_refunded → shopify_pending → recorded.
+Terminal GatewayError → terminal_uncertain. Source refund GatewayError → shopify_uncertain.
+Source reconciliation: one eluno_refund_id match → recorded; several → manual_review; none → remain uncertain.</h2>
+<p>prepare requires an order_recorded checkout and reads its original source order. It builds full refund lines and asks the source for the calculation. refund_attempts persists amount and payload before refunding. Its unique checkout_id restricts this model to one full refund attempt per checkout. complete returns an already-recorded result but blocks blindly repeating an attempted refund.</p>
+<p>Frame reversal uses the billing location; lenses use the non-restock path. The source refund represents the line tax reversal and the credit-note context references the original invoice. Real finance approval remains required. Remakes use the separate lens-only prepare flow; they are not a frame refund/rebuy shortcut.</p>
+<h2>7. Reports, drawer and outbox
+analytics reads source orders/refunds and aggregates by business day and optional store. Central totals sum sales and bills and calculate average bill value from the combined amount/count, not an unweighted average of store averages. Local operations attach opening cash, recorded expenses and counted cash to till records. The one_open_till partial unique index prevents two open sessions for one store.</h2>
+<p>Digest and variance messages enter outbox. Delivery claims queued → sending; successful SMTP submission records sent, while uncertain delivery records delivery_uncertain. Do not automatically resend an uncertain message and risk duplicates. Delivery requires SMTP configuration and an active scheduler process. The outbox is an email queue, not a general Shopify synchronization queue.</p>
+<h2>8. Errors and validation
+401 means no valid session; 403 means forbidden role/store/CSRF context. 404 identifies missing records, 405 the retired lookup method, 422 invalid business/input data, 409 a state conflict and 502 a provider failure. Exact response bodies come from each route/exception handler. Some schemas still expose generic object responses; the design guide does not imply every dictionary field has runtime type validation.</h2>
+<p>Session tokens are stored hashed. Passwords use PBKDF2-HMAC-SHA256 with 600,000 iterations and a per-password salt. Mutation requests require the session&#x27;s CSRF context. Browser/Swagger share backend authorization. Logs strip URL query strings, but body logging by a future proxy/APM needs its own controls.</p>
+<h2>9. Verification scenarios
+Lookup: bare number and +91 format resolve the same customer; invalid input fails; unknown customer is 404; no phone appears in default request URLs; old GET is 405.
+Clinical: latest unexpired Rx selected; incompatible lens blocked; invalid axis rejected; progressive lens requires suitable ADD; family members retain distinct Rx associations.
+Billing: valid frame/lens cart, multiple wearer units, authorized override/reason, stock changed before complete, double-click completion and concurrent invoice allocation.
+Failures: terminal timeout does not lead to automatic recharge; source order timeout is reconciled by reference; duplicate matching orders require review; process interruption leaves inspectable persisted state.
+Refund: correct tax reversal, original-store frame restock, no lens restock, repeated completion, uncertain source reconciliation.
+Operations: role/store denial, central totals, cash expenses/variance, unresolved-state close guard and SMTP-uncertain behavior.</h2>
+<p>Recorded validation: 333 full-suite tests passed and the private-wrapper browser journey passed separately. Load, real-provider, backup-recovery and seven-store rollout tests remain separate production acceptance work.</p>
+<h2>10. API and database reference
+The following appendix is generated from the saved OpenAPI contract and current CREATE TABLE declarations. These are actual project contracts, not proposed endpoint names. Full request/response bodies and external endpoints are in api-schema-guide.html and docs/openapi-contract.json. CREATE TABLE excerpts do not include every later ALTER TABLE migration or index; consult source for those details.</h2><details open><summary>Implemented API inventory</summary><pre>GET /health — Health
+GET /checkouts/{checkout_id} — Inspect durable local checkout state
+POST /sales/prepare — 3. Prepare a validated quote
+POST /sales/{checkout_id}/complete — 4. Confirm payment and create the source order
+POST /sales/{checkout_id}/reconcile-order — Recover an uncertain order without posting again
+POST /refunds/prepare — 6a. Preview original-line refund and tax
+GET /refunds/{refund_id} — Refund State
+POST /refunds/{refund_id}/complete — 6b. Refund payment and write back to Shopify
+POST /refunds/{refund_id}/reconcile-shopify — Recover an uncertain source refund without refunding twice
+GET /reports/day-end — Original order-day report contract
+GET / — Homepage
+POST /auth/login — 1. Sign in directly in Swagger
+GET /auth/me — Inspect the signed-in role and store
+POST /auth/logout — Logout
+GET /api/bootstrap — 2a. Discover stores, products and variant IDs
+POST /api/customers — 2b. Fetch the customer and prescriptions
+GET /api/inventory — 2c. Check stock at the billing store
+GET /api/transactions — Transactions
+GET /api/checkouts/{identifier}/detail — 5. Compare prepared payload with the source order
+POST /api/checkouts/{identifier}/cancel — Cancel
+GET /api/draft — Draft
+PUT /api/draft — Save Draft
+POST /api/prescriptions — Prescription
+POST /api/remakes/prepare — Remake
+GET /api/till — Till
+POST /api/till/{action} — Open, record paid-in or expense, and close a drawer
+GET /api/reports — 7. Read Shopify back and reconcile the result
+GET /api/register — Register
+GET /api/evidence — Evidence
+GET /api/audit — Audit Log
+GET /api/outbox — Outbox
+POST /api/reports/digest — Digest</pre></details><details><summary>Database table declarations</summary><pre>CREATE TABLE IF NOT EXISTS checkouts (
+                  checkout_id TEXT PRIMARY KEY,
+                  store_code TEXT NOT NULL,
+                  customer_id TEXT,
+                  status TEXT NOT NULL,
+                  payment_ref TEXT UNIQUE,
+                  payment_charge_id TEXT,
+                  shopify_order_id TEXT UNIQUE,
+                  invoice_no TEXT UNIQUE,
+                  error_detail TEXT,
+                  created_at TEXT NOT NULL,
+                  updated_at TEXT NOT NULL
+                );
+
+CREATE TABLE IF NOT EXISTS checkout_quotes (
+                  checkout_id TEXT PRIMARY KEY REFERENCES checkouts(checkout_id),
+                  quote_json TEXT NOT NULL
+                );
+
+CREATE TABLE IF NOT EXISTS invoice_series (
+                  store_code TEXT PRIMARY KEY,
+                  prefix TEXT NOT NULL,
+                  next_number INTEGER NOT NULL CHECK (next_number &gt; 0)
+                );
+
+CREATE TABLE IF NOT EXISTS invoice_allocations (
+                  invoice_no TEXT PRIMARY KEY,
+                  checkout_id TEXT NOT NULL UNIQUE REFERENCES checkouts(checkout_id),
+                  store_code TEXT NOT NULL,
+                  serial_number INTEGER NOT NULL,
+                  allocated_at TEXT NOT NULL,
+                  status TEXT NOT NULL DEFAULT &#x27;reserved&#x27;,
+                  UNIQUE(store_code, serial_number)
+                );
+
+CREATE TABLE IF NOT EXISTS refund_attempts (
+                  refund_id TEXT PRIMARY KEY,
+                  checkout_id TEXT NOT NULL UNIQUE REFERENCES checkouts(checkout_id),
+                  shopify_order_id TEXT NOT NULL,
+                  amount_paise INTEGER NOT NULL,
+                  payload_json TEXT NOT NULL,
+                  status TEXT NOT NULL,
+                  terminal_refund_id TEXT,
+                  shopify_refund_id TEXT,
+                  error_detail TEXT,
+                  created_at TEXT NOT NULL,
+                  updated_at TEXT NOT NULL
+                );
+
+CREATE TABLE IF NOT EXISTS users(username TEXT PRIMARY KEY, password_hash TEXT NOT NULL,
+          role TEXT NOT NULL, store_code TEXT NOT NULL, staff_id TEXT NOT NULL, display_name TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, username TEXT NOT NULL,
+          csrf TEXT NOT NULL, expires REAL NOT NULL);
+
+CREATE TABLE IF NOT EXISTS login_attempts(username TEXT PRIMARY KEY, attempts INTEGER NOT NULL, since REAL NOT NULL);
+
+CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL,
+          actor TEXT NOT NULL, action TEXT NOT NULL, reference TEXT NOT NULL, detail TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS drafts(username TEXT PRIMARY KEY, payload TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS prescriptions(rx_id TEXT PRIMARY KEY, phone TEXT NOT NULL, payload TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS tills(id TEXT PRIMARY KEY, store_code TEXT NOT NULL, opened_at TEXT NOT NULL,
+          closed_at TEXT, opening_paise INTEGER NOT NULL, counted_paise INTEGER, expected_paise INTEGER, variance_paise INTEGER);
+
+CREATE TABLE IF NOT EXISTS expenses(id TEXT PRIMARY KEY, till_id TEXT NOT NULL, amount_paise INTEGER NOT NULL,
+          reason TEXT NOT NULL, actor TEXT NOT NULL, at TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS paid_ins(id TEXT PRIMARY KEY, till_id TEXT NOT NULL, amount_paise INTEGER NOT NULL CHECK(amount_paise &gt; 0),
+          reason TEXT NOT NULL, actor TEXT NOT NULL, at TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS outbox(id TEXT PRIMARY KEY, created_at TEXT NOT NULL, subject TEXT NOT NULL,
+          body TEXT NOT NULL, status TEXT NOT NULL DEFAULT &#x27;queued&#x27;, error TEXT);
+
+CREATE TABLE IF NOT EXISTS timings(checkout_id TEXT PRIMARY KEY, elapsed_ms REAL NOT NULL, at TEXT NOT NULL);</pre></details></section></main></html>

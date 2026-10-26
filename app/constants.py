@@ -1,0 +1,26 @@
+"""Shared application policies and defaults; offers and tax rates remain data files."""
+
+from datetime import timedelta, timezone
+
+INDIA = timezone(timedelta(hours=5, minutes=30))
+DEFAULT_MOCK_URL = "http://127.0.0.1:8787"
+MOCK_SHOPIFY_API_PREFIX = "/admin/api/2026-10/"
+HTTP_TIMEOUT_SECONDS = 4.0
+SAFE_READ_ATTEMPTS = 3
+RETRY_BACKOFF_SECONDS = 0.1
+MAX_RETRY_DELAY_SECONDS = 1.0
+MOCK_ORDER_LIMIT = 250
+PAISE_PER_RUPEE = 100
+BASIS_POINTS_PER_UNIT = 10_000
+MANAGER_DISCOUNT_LIMIT_BPS = 1_000
+CASH_VARIANCE_ALERT_PAISE = 20_000
+PASSWORD_HASH_ITERATIONS = 600_000
+LOGIN_WINDOW_SECONDS = 900
+LOGIN_ATTEMPT_LIMIT = 8
+SESSION_DURATION_SECONDS = 28_800
+INDIAN_COUNTRY_CODE = "91"
+INDIAN_PHONE_PREFIX = "+91"
+MOBILE_DIGIT_COUNT = 10
+MAX_PHONE_INPUT_LENGTH = 40
+PAYMENT_METHODS = frozenset({"upi", "card", "cash"})
+SALES_CHANNELS = frozenset({"walk_in", "whatsapp", "online_pickup"})

@@ -3,9 +3,13 @@
 import hashlib
 import hmac
 import json
+import logging
 import os
 import threading
 import time
+import csv
+import io
+from typing import Literal
 from contextlib import asynccontextmanager
 from datetime import datetime, date, timedelta
 from pathlib import Path
@@ -33,9 +37,20 @@ from app.operations import (
 )
 from app.persistence.sqlite import CheckoutNotFound, StateConflict
 from app.services.sale import SaleService
+from app.services.reporting import DayEndService
+from app.domain.money import money
+from app.gateways.billing import BillingAdapter
 from app.services.catalog import load_json
 from app.domain.models import CheckoutStatus
 from app.gateways.http import GatewayError
+from app.phone import PhoneNumber, normalize_phone
+from app.customer_schemas import (
+    CustomerLookupRequest,
+    CustomerLookupResponse,
+    PrescriptionInput,
+)
+from app.logging_filters import QueryStringFilter
+from app.constants import MANAGER_DISCOUNT_LIMIT_BPS, SESSION_DURATION_SECONDS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -54,7 +69,7 @@ class AmountRequest(BaseModel):
 class RemakeRequest(BaseModel):
     checkout_id: str
     lens_variant_id: int
-    wearer_phone: str
+    wearer_phone: PhoneNumber
     reason: str = Field(min_length=3, max_length=500)
     cost_owner: str
     lab_cost_paise: int = Field(strict=True, ge=0, le=100000000)
@@ -63,6 +78,7 @@ class RemakeRequest(BaseModel):
 # Mount additive routes and guard every existing business endpoint.
 def install(app, store_factory):
     """Mount additive routes and guard every existing business endpoint."""
+    logging.getLogger("uvicorn.access").addFilter(QueryStringFilter())
     app.mount(
         "/static",
         StaticFiles(directory=ROOT / "app/static", check_dir=False),
@@ -131,6 +147,8 @@ def install(app, store_factory):
                         else "cashier",
                         "manager",
                     )
+                if path == "/api/prescriptions" and mutating:
+                    require_role(user, "optometrist")
                 if (
                     path in {"/sales/prepare", "/refunds/prepare"}
                     and request.method == "POST"
@@ -145,6 +163,12 @@ def install(app, store_factory):
                         raise HTTPException(422, "Supply a JSON object")
                 if path == "/sales/prepare" and request.method == "POST":
                     require_store(user, body.get("store_code", ""))
+                    selected_offer_id = body.get("selected_offer_id")
+                    if selected_offer_id is not None and (
+                        not isinstance(selected_offer_id, str)
+                        or not 1 <= len(selected_offer_id) <= 80
+                    ):
+                        raise HTTPException(422, "Choose one valid coupon ID")
                     if (
                         user["role"] != "admin"
                         and body.get("staff_id") != user["staff_id"]
@@ -156,7 +180,9 @@ def install(app, store_factory):
                         require_role(user, "manager")
                         if (
                             type(body["override_bps"]) is not int
-                            or not 0 <= body["override_bps"] <= 1000
+                            or not 0
+                            <= body["override_bps"]
+                            <= MANAGER_DISCOUNT_LIMIT_BPS
                         ):
                             raise HTTPException(
                                 422, "Manager discount must be between 0 and 10%"
@@ -168,17 +194,31 @@ def install(app, store_factory):
                         or any(
                             not isinstance(item, dict)
                             or not isinstance(item.get("phone"), str)
-                            or not isinstance(item.get("variant_ids"), list)
-                            or not 1 <= len(item["variant_ids"]) <= 30
-                            or any(
-                                type(value) is not int for value in item["variant_ids"]
+                            or not isinstance(item.get("variant_ids", []), list)
+                            or not isinstance(
+                                item.get("lens_only_variant_ids", []), list
                             )
+                            or not isinstance(item.get("frame_only_variant_ids", []), list)
+                            or not 1
+                            <= len(item.get("variant_ids", []))
+                            + len(item.get("lens_only_variant_ids", []))
+                            + len(item.get("frame_only_variant_ids", []))
+                            <= 30
+                            or any(
+                                type(value) is not int
+                                for value in item.get("variant_ids", [])
+                            )
+                            or any(
+                                type(value) is not int
+                                for value in item.get("lens_only_variant_ids", [])
+                            )
+                            or any(type(value) is not int for value in item.get("frame_only_variant_ids", []))
                             for item in members
                         )
                     ):
                         raise HTTPException(
                             422,
-                            "Supply up to ten wearers, each with a phone and 1–30 variant IDs; repeat an ID for quantity",
+                            "Supply up to ten wearers, each with a phone and 1–30 frame/pair or lens-only variants",
                         )
                 segments = path.strip("/").split("/")
                 checkout = None
@@ -229,8 +269,9 @@ def install(app, store_factory):
                     elapsed = round((time.perf_counter() - started) * 1000, 2)
                     with store._connect() as connection:
                         connection.execute(
-                            "INSERT OR IGNORE INTO timings VALUES(?,?,?)",
-                            (segments[1], elapsed, now_iso()),
+                            "UPDATE checkouts SET checkout_elapsed_ms=?,timing_recorded_at=? "
+                            "WHERE checkout_id=? AND checkout_elapsed_ms IS NULL",
+                            (elapsed, now_iso(), segments[1]),
                         )
         except HTTPException as exception:
             response = JSONResponse(
@@ -306,7 +347,7 @@ def install(app, store_factory):
             httponly=True,
             samesite="strict",
             secure=os.environ.get("ELUNO_SECURE_COOKIES") == "1",
-            max_age=28800,
+            max_age=SESSION_DURATION_SECONDS,
         )
         return {"user": user, "csrf": csrf}
 
@@ -366,17 +407,19 @@ def install(app, store_factory):
                     for customer in load_json("customers.json")
                 ],
                 "staff": gateway.staff(""),
+                "offers": load_json("offers.json"),
                 "today": datetime.now(INDIA).date().isoformat(),
             }
         finally:
             gateway.client.close()
 
     # Fetch the live customer record and all available prescriptions.
-    @app.get("/api/customers")
-    def customer(phone: str, request: Request):
+    @app.post("/api/customers", response_model=CustomerLookupResponse)
+    def customer(body: CustomerLookupRequest, request: Request):
         """Fetch the live customer record and all available prescriptions."""
         gateway = OperationsGateway(store_factory())
         try:
+            phone = body.phone
             record = gateway.customer(phone)
             if not record:
                 raise HTTPException(404, "Customer not found")
@@ -414,7 +457,9 @@ def install(app, store_factory):
         require_store(request.state.user, store_code)
         records = rows(
             store_factory(),
-            "SELECT c.*,q.quote_json FROM checkouts c LEFT JOIN checkout_quotes q USING(checkout_id) WHERE store_code=? ORDER BY created_at DESC LIMIT 200",
+            "SELECT c.*,q.quote_json,r.status AS refund_status,r.refund_id,r.shopify_refund_id "
+            "FROM checkouts c LEFT JOIN checkout_quotes q USING(checkout_id) "
+            "LEFT JOIN refund_attempts r USING(checkout_id) WHERE c.store_code=? ORDER BY c.created_at DESC LIMIT 200",
             (store_code,),
         )
         for record in records:
@@ -441,6 +486,8 @@ def install(app, store_factory):
             return {
                 "checkout": checkout,
                 "quote": store.load_quote(identifier),
+                "invoice": store.get_invoice(identifier),
+                "refund_events": rows(store, "SELECT * FROM refund_events WHERE refund_id IN (SELECT refund_id FROM refund_attempts WHERE checkout_id=?) ORDER BY event_id", (identifier,)),
                 "order": gateway.order_by_id(checkout["shopify_order_id"])
                 if checkout["shopify_order_id"]
                 else None,
@@ -487,26 +534,132 @@ def install(app, store_factory):
         )
         return json.loads(result[0]["payload"]) if result else {}
 
+    # Return draft tracking metadata separately to preserve the existing cart API shape.
+    @app.get("/api/draft/metadata")
+    def draft_metadata(request: Request):
+        """Return the current draft ID and timestamps without changing GET /api/draft."""
+        result = rows(
+            store_factory(),
+            "SELECT draft_id,created_by,created_by_staff_id,created_at,updated_at FROM drafts WHERE username=?",
+            (request.state.user["username"],),
+        )
+        return result[0] if result else {}
+
     # Save a bounded browser cart for cross-reload recovery.
     @app.put("/api/draft")
     def save_draft(body: dict, request: Request):
         """Save a bounded browser cart for cross-reload recovery."""
         require_role(request.state.user, "cashier", "manager")
-        payload = json.dumps(body)
+        if body.get("store_code"):
+            require_store(request.state.user, body["store_code"])
+        if "members" in body:
+            if not isinstance(body["members"], list) or any(
+                not isinstance(member, dict) for member in body["members"]
+            ):
+                raise ValueError("Supply a list of wearer objects")
+            body = {
+                **body,
+                "members": [
+                    {**member, "phone": normalize_phone(member.get("phone"))}
+                    for member in body["members"]
+                ],
+            }
+        actor = request.state.user
+        store = store_factory()
+        saved_at = now_iso()
+        supplied_draft_id = body.get("draft_id")
+        if supplied_draft_id is not None and (
+            not isinstance(supplied_draft_id, str)
+            or not 1 <= len(supplied_draft_id) <= 80
+        ):
+            raise ValueError("draft_id must be a string of 1 to 80 characters")
+        with store._connect() as connection:
+            previous = connection.execute(
+                "SELECT draft_id,created_at,updated_at FROM drafts WHERE username=?",
+                (actor["username"],),
+            ).fetchone()
+            draft_id = supplied_draft_id or (previous["draft_id"] if previous else None) or "DR-" + str(uuid4())
+            same_draft = bool(previous and previous["draft_id"] == draft_id)
+            created_at = previous["created_at"] if same_draft and previous["created_at"] else saved_at
+            elapsed_ms = None
+            if same_draft and previous["updated_at"]:
+                try:
+                    previous_time = datetime.fromisoformat(previous["updated_at"].replace("Z", "+00:00"))
+                    current_time = datetime.fromisoformat(saved_at.replace("Z", "+00:00"))
+                    elapsed_ms = max(0.0, round((current_time - previous_time).total_seconds() * 1000, 2))
+                except ValueError:
+                    elapsed_ms = None
+        payload_body = {
+            key: value for key, value in body.items()
+            if key not in {"draft_id", "created_at", "updated_at", "created_by", "created_by_staff_id"}
+        }
+        payload = json.dumps(payload_body)
         if len(payload) > 40000:
             raise HTTPException(413, "Cart is too large")
-        with store_factory()._connect() as connection:
+        with store._connect() as connection:
             connection.execute(
-                "INSERT OR REPLACE INTO drafts VALUES(?,?)",
-                (request.state.user["username"], payload),
+                "INSERT INTO drafts(username,payload,draft_id,created_by,created_by_staff_id,created_at,updated_at) "
+                "VALUES(?,?,?,?,?,?,?) ON CONFLICT(username) DO UPDATE SET payload=excluded.payload, "
+                "draft_id=excluded.draft_id,created_by=excluded.created_by,created_by_staff_id=excluded.created_by_staff_id,"
+                "created_at=excluded.created_at,updated_at=excluded.updated_at",
+                (actor["username"], payload, draft_id, actor["username"], actor["staff_id"], created_at, saved_at),
             )
-        return {"saved": True}
+            connection.execute(
+                "INSERT INTO cart_snapshots(username,store_code,status,checkout_id,payload,saved_at,draft_id,created_by,created_by_staff_id,created_at,elapsed_ms) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    actor["username"],
+                    str(payload_body.get("store_code", actor["store_code"])),
+                    "quoted" if payload_body.get("quote_id") else "draft",
+                    payload_body.get("quote_id"),
+                    payload,
+                    saved_at,
+                    draft_id,
+                    actor["username"],
+                    actor["staff_id"],
+                    created_at,
+                    elapsed_ms,
+                ),
+            )
+        return {"saved": True, "draft_id": draft_id, "created_at": created_at, "updated_at": saved_at}
+
+    # List immutable draft snapshots with their associated checkout and source order.
+    @app.get("/api/drafts/history")
+    def draft_history(request: Request, store_code: str | None = None):
+        """List immutable draft snapshots with actor, timing, checkout and Shopify references."""
+        user = request.state.user
+        if user["role"] in {"admin", "finance"}:
+            if store_code:
+                require_store(user, store_code)
+                predicate, parameters = "WHERE snapshot.store_code=?", (store_code,)
+            else:
+                predicate, parameters = "", ()
+        else:
+            require_store(user, store_code or user["store_code"])
+            predicate, parameters = "WHERE snapshot.store_code=?", (store_code or user["store_code"],)
+        records = rows(
+            store_factory(),
+            "SELECT snapshot.snapshot_id,snapshot.draft_id,snapshot.username,snapshot.created_by,"
+            "snapshot.created_by_staff_id,snapshot.store_code,snapshot.status,snapshot.checkout_id,"
+            "snapshot.created_at,snapshot.saved_at,snapshot.elapsed_ms,checkout.status AS checkout_status,"
+            "checkout.invoice_no,checkout.shopify_order_id "
+            "FROM cart_snapshots AS snapshot "
+            "LEFT JOIN checkouts AS checkout ON checkout.checkout_id=snapshot.checkout_id "
+            + predicate
+            + " ORDER BY snapshot.saved_at DESC",
+            parameters,
+        )
+        return records
 
     # Record a clinician-authored prescription with five-degree manual axis steps.
     @app.post("/api/prescriptions")
-    def prescription(body: dict, request: Request):
+    def prescription(body: PrescriptionInput, request: Request):
         """Record a clinician-authored prescription with five-degree manual axis steps."""
         require_role(request.state.user, "optometrist")
+        body = body.model_dump(mode="json")
+        clinical_store = body.get("store_code") or request.state.user["store_code"]
+        if clinical_store != "*":
+            require_store(request.state.user, clinical_store)
         from decimal import Decimal, InvalidOperation
 
         for side in ("od", "os"):
@@ -521,16 +674,9 @@ def install(app, store_factory):
                 ):
                     raise ValueError("Invalid sphere or cylinder")
                 axis = eye.get("axis")
-                if axis is not None and (
-                    type(axis) is not int or not 5 <= axis <= 180 or axis % 5
-                ):
+                if type(axis) is not int or not 0 <= axis <= 180 or axis % 5:
                     raise ValueError("New axis entries must use 5-degree intervals")
-                if cylinder and axis is None:
-                    raise ValueError("Cylinder requires an axis")
-                if (
-                    eye.get("add") is not None
-                    and not 0 <= Decimal(str(eye["add"])) <= 5
-                ):
+                if not 0 <= Decimal(str(eye["add"])) <= 5:
                     raise ValueError("ADD must be between 0 and 5")
             except (KeyError, InvalidOperation, TypeError) as exception:
                 raise ValueError("Enter valid prescription values") from exception
@@ -540,6 +686,10 @@ def install(app, store_factory):
             raise ValueError("Validity must be within the next two years")
         gateway = OperationsGateway(store_factory())
         try:
+            if clinical_store != "*" and not any(location["eluno"]["store_code"] == clinical_store
+                                                  and location["eluno"]["kind"] == "store"
+                                                  for location in gateway.locations()):
+                raise ValueError("Unknown clinical store")
             customer = gateway.customer(body.get("phone", ""))
             if not customer:
                 raise ValueError("Unknown customer")
@@ -556,10 +706,33 @@ def install(app, store_factory):
         )
         with store_factory()._connect() as connection:
             connection.execute(
-                "INSERT INTO prescriptions VALUES(?,?,?)",
-                (identifier, record["phone"], json.dumps(record)),
+                "INSERT INTO prescriptions(rx_id,phone,payload,created_by,created_by_staff_id,created_at,store_code) VALUES(?,?,?,?,?,?,?)",
+                (identifier, record["phone"], json.dumps(record), request.state.user["username"], request.state.user["staff_id"], now_iso(), clinical_store),
             )
         return record
+
+    # Show who entered local prescriptions and when, without exposing phone numbers.
+    @app.get("/api/prescriptions/history")
+    def prescription_history(request: Request, store_code: str | None = None):
+        """Show clinical record IDs, author, store and timestamp without exposing phone numbers."""
+        user = request.state.user
+        require_role(user, "optometrist", "finance")
+        if user["role"] not in {"admin", "finance"}:
+            require_store(user, store_code or user["store_code"])
+            predicate, parameters = "WHERE store_code=?", (store_code or user["store_code"],)
+        elif store_code:
+            require_store(user, store_code)
+            predicate, parameters = "WHERE store_code=?", (store_code,)
+        else:
+            predicate, parameters = "", ()
+        return rows(
+            store_factory(),
+            "SELECT rx_id,created_by,created_by_staff_id,created_at,store_code,"
+            "json_extract(payload,'$.customer_id') AS customer_id,"
+            "json_extract(payload,'$.valid_until') AS valid_until FROM prescriptions "
+            + predicate + " ORDER BY created_at DESC",
+            parameters,
+        )
 
     # Prepare a linked lens-only remake and retain its cost owner and approver.
     @app.post("/api/remakes/prepare")
@@ -595,7 +768,7 @@ def install(app, store_factory):
                     if staff["can_override_discount"]
                 )
             )
-            return SaleService(store, gateway).prepare(
+            return SaleService(store, BillingAdapter(gateway)).prepare(
                 phone=body.wearer_phone,
                 store_code=original["store_code"],
                 staff_id=staff_id,
@@ -631,16 +804,17 @@ def install(app, store_factory):
         store = store_factory()
         if action == "open":
             return {"id": open_till(store, body.store_code, body.amount_paise)}
-        if action == "expense":
+        if action in {"expense", "paid-in"}:
             active = current_till(store, body.store_code)
             if not active:
                 raise HTTPException(409, "Open a drawer first")
             if body.amount_paise <= 0 or len(body.reason.strip()) < 3:
-                raise ValueError("A positive expense and reason are required")
+                raise ValueError("A positive cash movement and reason are required")
             identifier = str(uuid4())
+            table = "expenses" if action == "expense" else "paid_ins"
             with store._connect() as connection:
                 connection.execute(
-                    "INSERT INTO expenses VALUES(?,?,?,?,?,?)",
+                    f"INSERT INTO {table} VALUES(?,?,?,?,?,?)",
                     (
                         identifier,
                         active["id"],
@@ -674,6 +848,66 @@ def install(app, store_factory):
         finally:
             gateway.client.close()
 
+    # Export Shopify-derived figures with an explicit refund accounting basis.
+    @app.get("/api/reports/export", response_class=Response, responses={
+        200: {"description": "Downloadable Shopify-derived report.", "content": {"text/csv": {"schema": {"type": "string"}}}},
+    })
+    def export_report(day: str, request: Request, store_code: str | None = None,
+                      basis: Literal["day_end", "daily"] = "day_end"):
+        """Download exact INR amounts; store roles can export only their own store."""
+        day = date.fromisoformat(day).isoformat()
+        user = request.state.user
+        if user["role"] not in {"admin", "finance"}:
+            store_code = store_code or user["store_code"]
+        if store_code:
+            require_store(user, store_code)
+        gateway = OperationsGateway(store_factory())
+        try:
+            if basis == "daily":
+                result = analytics(gateway, day, store_code)
+                summaries = result["stores"]
+                refund_basis = result["refund_basis"]
+            else:
+                stores = [location["eluno"]["store_code"] for location in gateway.locations()
+                          if location["eluno"]["kind"] == "store"
+                          and (not store_code or location["eluno"]["store_code"] == store_code)]
+                if not stores:
+                    raise ValueError("Unknown store")
+                summaries = [DayEndService(BillingAdapter(gateway)).report(code, day) for code in stores]
+                refund_basis = "Refunds on orders from the selected date, regardless of refund date."
+            output = io.StringIO(newline="")
+            writer = csv.writer(output)
+            writer.writerow(["date", "store", "bill_count", "gross_inr", "taxable_inr", "tax_inr",
+                             "discounts_inr", "refunds_inr", "sales_inr", "net_collected_inr",
+                             "cash_inr", "card_inr", "upi_inr", "other_payments_inr", "source", "refund_basis"])
+            combined = {key: 0 for key in ("bill_count", "gross_paise", "taxable_paise", "tax_paise",
+                                          "discounts_paise", "refunds_paise", "net_collected_paise")}
+            combined["store_code"] = "ALL"
+            combined["payment_methods"] = {}
+            for summary in summaries:
+                for key in combined:
+                    if key not in {"store_code", "payment_methods"}:
+                        combined[key] += summary[key]
+                for method, amount in summary["payment_methods"].items():
+                    combined["payment_methods"][method] = combined["payment_methods"].get(method, 0) + amount
+            for summary in summaries + ([combined] if len(summaries) > 1 else []):
+                methods = summary["payment_methods"]
+                writer.writerow([
+                    day, summary["store_code"], summary["bill_count"], money(summary["gross_paise"]),
+                    money(summary["taxable_paise"]), money(summary["tax_paise"]),
+                    money(summary["discounts_paise"]), money(summary["refunds_paise"]),
+                    money(summary["gross_paise"] - summary["discounts_paise"]), money(summary["net_collected_paise"]),
+                    money(methods.get("cash", 0)), money(methods.get("card", 0)), money(methods.get("upi", 0)),
+                    money(sum(value for method, value in methods.items() if method not in {"cash", "card", "upi"})),
+                    "Shopify orders", refund_basis,
+                ])
+            return Response(
+                content=output.getvalue(), media_type="text/csv; charset=utf-8",
+                headers={"Content-Disposition": f'attachment; filename="eluno-{basis}-{store_code or "all-stores"}-{day}.csv"'},
+            )
+        finally:
+            gateway.client.close()
+
     # Expose every invoice allocation including cancelled numbers.
     @app.get("/api/register")
     def register(store_code: str, request: Request):
@@ -689,11 +923,13 @@ def install(app, store_factory):
         predicate, parameters = (
             ("", ())
             if user["role"] in {"admin", "finance"}
-            else (" WHERE c.store_code=?", (user["store_code"],))
+            else (" AND c.store_code=?", (user["store_code"],))
         )
         measurements = rows(
             store_factory(),
-            "SELECT t.* FROM timings t JOIN checkouts c USING(checkout_id)" + predicate,
+            "SELECT c.checkout_id,c.checkout_elapsed_ms AS elapsed_ms,c.timing_recorded_at AS at "
+            "FROM checkouts c WHERE c.checkout_elapsed_ms IS NOT NULL"
+            + predicate,
             parameters,
         )
         values = sorted(item["elapsed_ms"] for item in measurements)

@@ -53,7 +53,7 @@ def main():
         page.screenshot(path=str(screenshots / "credit-note.png"), full_page=True)
         page.get_by_role("button", name="Close ✕", exact=True).click()
         page.locator('[data-page="reports"]').click()
-        page.get_by_role("heading", name="Store performance").wait_for()
+        page.get_by_role("heading", name="Total daily performance").wait_for()
         page.screenshot(path=str(screenshots / "reports.png"), full_page=True)
         page.locator('[data-page="evidence"]').click()
         page.get_by_role("heading", name="Stakeholder acceptance map").wait_for()

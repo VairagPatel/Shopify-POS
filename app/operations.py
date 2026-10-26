@@ -7,9 +7,15 @@ from datetime import datetime, timezone, timedelta, date
 from uuid import uuid4
 from fastapi import HTTPException
 from app.gateways.http import MockHTTP
-from app.services.sale import paise
+from app.domain.money import paise
+from app.phone import normalize_phone
 
-INDIA = timezone(timedelta(hours=5, minutes=30))
+from app.constants import (
+    INDIA,
+    DEFAULT_MOCK_URL,
+    MOCK_ORDER_LIMIT,
+    CASH_VARIANCE_ALERT_PAISE,
+)
 
 
 # Use aware timestamps so store-day reporting is independent of host timezone.
@@ -47,12 +53,16 @@ class OperationsGateway(MockHTTP):
     # Bind a short-lived HTTP client and the local clinical record store.
     def __init__(self, store):
         """Bind a short-lived HTTP client and the local clinical record store."""
-        super().__init__(os.environ.get("ELUNO_MOCK_URL", "http://127.0.0.1:8787"))
+        super().__init__(
+            os.environ.get("ELUNO_MOCK_URL", DEFAULT_MOCK_URL),
+            private_lookup=os.environ.get("ELUNO_PRIVATE_LOOKUP", "1") == "1",
+        )
         self.store = store
 
     # Merge immutable source prescriptions with locally authored demo records.
     def prescriptions(self, phone):
         """Merge immutable source prescriptions with locally authored demo records."""
+        phone = normalize_phone(phone)
         local = rows(
             self.store, "SELECT payload FROM prescriptions WHERE phone=?", (phone,)
         )
@@ -64,8 +74,8 @@ class OperationsGateway(MockHTTP):
 # Fail explicitly when the mock's bounded API cannot certify a complete report.
 def all_orders(gateway):
     """Fail explicitly when the mock's bounded API cannot certify a complete report."""
-    orders = gateway.orders(limit=250)
-    if len(orders) >= 250:
+    orders = gateway.orders(limit=MOCK_ORDER_LIMIT)
+    if len(orders) >= MOCK_ORDER_LIMIT:
         raise HTTPException(
             422,
             "250-order mock API cap reached; archive the demo session before reporting.",
@@ -101,7 +111,7 @@ def analytics(gateway, day, store_code=None):
         sales = [
             order for order in store_orders if store_day(order["created_at"]) == day
         ]
-        gross = sum(paise(order["subtotal_price"]) for order in sales)
+        gross = sum(paise(line["price"]) * line["quantity"] for order in sales for line in order["line_items"])
         discounts = sum(paise(order["total_discounts"]) for order in sales)
         total = sum(paise(order["total_price"]) for order in sales)
         tax = sum(paise(order["total_tax"]) for order in sales)
@@ -118,7 +128,15 @@ def analytics(gateway, day, store_code=None):
             for refund in order.get("refunds", [])
             if store_day(refund["created_at"]) == day
             for transaction in refund["transactions"]
+            if transaction.get("kind") == "refund" and transaction.get("status") == "success"
         )
+        payment_methods = {}
+        for order in sales:
+            notes = {item["name"]: item["value"] for item in order.get("note_attributes", [])}
+            for transaction in order.get("transactions", []):
+                if transaction.get("kind") == "sale" and transaction.get("status") == "success":
+                    method = notes.get("payment_method") or transaction.get("gateway", "unknown")
+                    payment_methods[method] = payment_methods.get(method, 0) + paise(transaction["amount"])
         channels = {}
         for order in sales:
             attributes = {
@@ -140,6 +158,7 @@ def analytics(gateway, day, store_code=None):
                 "net_collected_paise": payments - refunds,
                 "average_bill_paise": round(total / len(sales)) if sales else 0,
                 "reconciliation_delta_paise": payments - total,
+                "payment_methods": payment_methods,
                 "channels": channels,
                 "order_ids": [order["id"] for order in sales],
             }
@@ -244,6 +263,10 @@ def till_summary(store, gateway, store_code):
         store, "SELECT * FROM expenses WHERE till_id=? ORDER BY at DESC", (till["id"],)
     )
     expense_total = sum(item["amount_paise"] for item in expenses)
+    paid_ins = rows(
+        store, "SELECT * FROM paid_ins WHERE till_id=? ORDER BY at DESC", (till["id"],)
+    )
+    paid_in_total = sum(item["amount_paise"] for item in paid_ins)
     return {
         **till,
         "open": True,
@@ -251,7 +274,13 @@ def till_summary(store, gateway, store_code):
         "cash_refunds_paise": cash_out,
         "expenses": expenses,
         "expenses_paise": expense_total,
-        "expected_paise": till["opening_paise"] + cash_in - cash_out - expense_total,
+        "paid_ins": paid_ins,
+        "paid_ins_paise": paid_in_total,
+        "expected_paise": till["opening_paise"]
+        + cash_in
+        + paid_in_total
+        - cash_out
+        - expense_total,
     }
 
 
@@ -295,7 +324,7 @@ def close_till(store, gateway, store_code, counted_paise):
         )
         if updated.rowcount != 1:
             raise HTTPException(409, "Drawer was already closed")
-    if abs(variance) > 20000:
+    if abs(variance) > CASH_VARIANCE_ALERT_PAISE:
         enqueue_email(
             store,
             "variance-" + till["id"],
@@ -307,7 +336,7 @@ def close_till(store, gateway, store_code, counted_paise):
         "open": False,
         "counted_paise": counted_paise,
         "variance_paise": variance,
-        "flagged": abs(variance) > 20000,
+        "flagged": abs(variance) > CASH_VARIANCE_ALERT_PAISE,
     }
 
 

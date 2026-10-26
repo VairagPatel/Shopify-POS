@@ -1,3 +1,5 @@
+> Historical audit. See docs/FINAL_REQUIREMENT_AUDIT.md for the 26 October final-scope audit and 346-test evidence.
+
 # Expanded demo validation — 25 October 2026
 
 **Latest role/endpoint/cart audit: 313 tests passed in 164.61 seconds**, including real Chrome checks for all five roles. The cashier now supports multiple frames and quantities. See [current results](docs/TEST_RESULTS.md), [test plan](docs/PRODUCTION_TEST_PLAN.md) and [frontend/Swagger acceptance steps](docs/CASHIER_ACCEPTANCE.md). The 50-test evidence below describes the earlier baseline, not the current total.

@@ -1,5 +1,6 @@
 """Mock integration coverage for Stage 6, isolated fresh server per test."""
 
+from app.gateways.billing import BillingAdapter
 from datetime import datetime
 import pytest
 from app.services.refunds import RefundService, RefundValidationError
@@ -15,9 +16,9 @@ from test_stage5 import backend
 def ready(tmp_path, backend):
     "Support ready."
     store = SQLiteStore(str(tmp_path / "state.sqlite3"))
-    sale = SaleService(store, backend)
+    sale = SaleService(store, BillingAdapter(backend))
     quote = sale.prepare(
-        phone="+919000000005",
+        phone="+919000000004",
         store_code="HSR",
         staff_id="S105",
         variant_ids=[91000003, 91000083],
@@ -30,7 +31,7 @@ def ready(tmp_path, backend):
 def test_full_refund_amount_tax_and_stock(ready):
     "Verify full refund amount tax and stock."
     store, api, quote, finished = ready
-    svc = RefundService(store, api)
+    svc = RefundService(store, BillingAdapter(api))
     before = api.stock(92000003, 70000002)
     preview = svc.prepare(quote["checkout_id"], "customer_return")
     assert preview["amount_paise"] == quote["total_paise"]
@@ -55,7 +56,7 @@ def test_full_refund_amount_tax_and_stock(ready):
 def test_terminal_refund_uncertain_is_not_retried(ready):
     "Verify terminal refund uncertain is not retried."
     store, api, quote, _ = ready
-    svc = RefundService(store, api)
+    svc = RefundService(store, BillingAdapter(api))
     preview = svc.prepare(quote["checkout_id"], "customer_return")
 
     class LostTerminal:
@@ -73,7 +74,7 @@ def test_terminal_refund_uncertain_is_not_retried(ready):
             raise GatewayError("lost response", uncertain=True)
 
     fail = LostTerminal()
-    svc.gateway = fail
+    svc.gateway = BillingAdapter(fail)
     with pytest.raises(GatewayError):
         svc.complete(preview["refund_id"])
     with pytest.raises(StateConflict):
@@ -86,7 +87,7 @@ def test_terminal_refund_uncertain_is_not_retried(ready):
 def test_lost_shopify_refund_response_reconciles(ready):
     "Verify lost shopify refund response reconciles."
     store, api, quote, _ = ready
-    svc = RefundService(store, api)
+    svc = RefundService(store, BillingAdapter(api))
     preview = svc.prepare(quote["checkout_id"], "return")
 
     class LostShopify:
@@ -100,13 +101,13 @@ def test_lost_shopify_refund_response_reconciles(ready):
             api.create_refund(oid, payload)
             raise GatewayError("response dropped", uncertain=True)
 
-    svc.gateway = LostShopify()
+    svc.gateway = BillingAdapter(LostShopify())
     with pytest.raises(GatewayError):
         svc.complete(preview["refund_id"])
     assert store.get_refund(preview["refund_id"])["status"] == "shopify_uncertain"
     with pytest.raises(StateConflict):
         svc.complete(preview["refund_id"])
-    svc.gateway = api
+    svc.gateway = BillingAdapter(api)
     assert svc.reconcile_shopify(preview["refund_id"])["status"] == "recorded"
 
 
@@ -121,17 +122,17 @@ def test_report_from_shopify_after_refund(ready):
         .date()
         .isoformat()
     )
-    report = DayEndService(api).report("HSR", when)
+    report = DayEndService(BillingAdapter(api)).report("HSR", when)
     assert finished["shopify_order_id"] in [str(i) for i in report["order_ids"]]
     assert report["bill_count"] >= 1
     assert (
         report["gross_paise"] - report["discounts_paise"] - report["tax_paise"]
         == report["taxable_paise"]
     )
-    svc = RefundService(store, api)
+    svc = RefundService(store, BillingAdapter(api))
     preview = svc.prepare(quote["checkout_id"], "return")
     svc.complete(preview["refund_id"])
-    after = DayEndService(api).report("HSR", when)
+    after = DayEndService(BillingAdapter(api)).report("HSR", when)
     assert after["refunds_paise"] - report["refunds_paise"] == quote["total_paise"]
     assert (
         after["net_collected_paise"]
@@ -143,7 +144,7 @@ def test_report_from_shopify_after_refund(ready):
 def test_refund_prepare_does_not_restock_or_refund(ready):
     "Verify refund prepare does not restock or refund."
     store, api, quote, finished = ready
-    r = RefundService(store, api)
+    r = RefundService(store, BillingAdapter(api))
     before = api.stock(92000003, 70000002)
     r.prepare(quote["checkout_id"], "return")
     assert api.stock(92000003, 70000002) == before

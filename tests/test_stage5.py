@@ -1,5 +1,6 @@
 """Integration coverage using the actual supplied mock; no modification to mock code."""
 
+from app.gateways.billing import BillingAdapter
 import socket
 import subprocess
 import sys
@@ -49,18 +50,54 @@ def backend():
 def sale(tmp_path, backend):
     "Support sale."
     db = SQLiteStore(str(tmp_path / "checkout.sqlite3"))
-    return SaleService(db, backend)
+    return SaleService(db, BillingAdapter(backend))
 
 
 # Retry safe reads only; send financial mutations exactly once.
 def request(sale):
     "Retry safe reads only; send financial mutations exactly once."
     return sale.prepare(
-        phone="+919000000005",
+        phone="+919000000004",
         store_code="HSR",
         staff_id="S105",
         variant_ids=[91000003, 91000083],
     )
+
+
+# Validate a standalone prescription lens-pair purchase through order creation.
+def test_lens_only_sale_prepares_and_completes_without_a_frame(sale, backend):
+    "Validate a standalone prescription lens-pair purchase through order creation."
+    quote = sale.prepare(
+        phone="+919000000004",
+        store_code="HSR",
+        staff_id="S105",
+        variant_ids=[],
+        members=[
+            {
+                "phone": "+919000000004",
+                "variant_ids": [],
+                "lens_only_variant_ids": [91000083],
+            }
+        ],
+    )
+    saved = sale.store.load_quote(quote["checkout_id"])
+    assert len(saved["lines"]) == 1
+    assert saved["lines"][0]["variant_id"] == 91000083
+    assert saved["lines"][0]["rx_id"]
+    order_line = saved["order_payload"]["line_items"][0]
+    properties = {item["name"]: item["value"] for item in order_line["properties"]}
+    assert properties["line_type"] == "lens"
+    assert properties["rx_id"] == saved["lines"][0]["rx_id"]
+    assert "pair_ref" not in properties
+
+    completed = sale.complete(quote["checkout_id"])
+    assert completed["status"] == "order_recorded"
+    source_order = next(
+        order for order in backend.orders()
+        if str(order["id"]) == completed["shopify_order_id"]
+    )
+    assert len(source_order["line_items"]) == 1
+    assert source_order["line_items"][0]["variant_id"] == 91000083
 
 
 # Verify sale mock roundtrip and stock.
@@ -95,10 +132,10 @@ def test_no_stock_blocks_before_charge(sale, backend):
     "Verify no stock blocks before charge."
     with pytest.raises(SaleValidationError, match="out of stock"):
         sale.prepare(
-            phone="+919000000005",
+            phone="+919000000004",
             store_code="HSR",
             staff_id="S105",
-            variant_ids=[91000009],
+            variant_ids=[91000009, 91000083],
         )
     assert backend.orders() is not None
 
@@ -108,10 +145,10 @@ def test_invalid_staff_blocks(sale):
     "Verify invalid staff blocks."
     with pytest.raises(SaleValidationError, match="Staff"):
         sale.prepare(
-            phone="+919000000005",
+            phone="+919000000004",
             store_code="HSR",
             staff_id="S999",
-            variant_ids=[91000003],
+            variant_ids=[91000003, 91000083],
         )
 
 
@@ -120,7 +157,7 @@ def test_persist_across_restart_and_refuse_duplicate(sale, backend):
     "Verify persist across restart and refuse duplicate."
     quote = request(sale)
     sale.complete(quote["checkout_id"])
-    reopened = SaleService(SQLiteStore(sale.store.path), backend)
+    reopened = SaleService(SQLiteStore(sale.store.path), BillingAdapter(backend))
     assert reopened.complete(quote["checkout_id"])["status"] == "order_recorded"
 
 
@@ -167,7 +204,7 @@ def test_uncertain_charge_never_repeated(sale, backend):
     "Verify uncertain charge never repeated."
     quote = request(sale)
     failure = FailCharge(backend)
-    sale.gateway = failure
+    sale.gateway = BillingAdapter(failure)
     with pytest.raises(GatewayError):
         sale.complete(quote["checkout_id"])
     assert (
@@ -183,14 +220,14 @@ def test_uncertain_order_never_reposted(sale, backend):
     "Verify uncertain order never reposted."
     quote = request(sale)
     failure = FailOrder(backend)
-    sale.gateway = failure
+    sale.gateway = BillingAdapter(failure)
     with pytest.raises(GatewayError):
         sale.complete(quote["checkout_id"])
     assert sale.store.get_checkout(quote["checkout_id"])["status"] == "order_uncertain"
     with pytest.raises(StateConflict):
         sale.complete(quote["checkout_id"])
     assert failure.attempts == 1
-    sale.gateway = backend
+    sale.gateway = BillingAdapter(backend)
     assert sale.reconcile_order(quote["checkout_id"])["status"] == "order_uncertain"
 
 
@@ -215,8 +252,8 @@ def test_reconcile_existing_order_after_lost_response(sale, backend):
             self.real.order(payload)
             raise GatewayError("response lost", uncertain=True)
 
-    sale.gateway = LostResponse(backend)
+    sale.gateway = BillingAdapter(LostResponse(backend))
     with pytest.raises(GatewayError):
         sale.complete(quote["checkout_id"])
-    sale.gateway = backend
+    sale.gateway = BillingAdapter(backend)
     assert sale.reconcile_order(quote["checkout_id"])["status"] == "order_recorded"

@@ -35,11 +35,17 @@ def main():
         password = secrets.token_urlsafe(16)
         provision_user(store, username, password, role, store_code, staff, name)
         credentials.append(f"{username}\t{password}\t{role}")
-    destination = ROOT / "runtime/demo-accounts.txt"
+    destination = (
+        Path(os.environ.get("ELUNO_RUNTIME", str(ROOT / "runtime")))
+        / "demo-accounts.txt"
+    )
+    destination.parent.mkdir(parents=True, exist_ok=True)
     if credentials:
         with destination.open("a", encoding="utf-8") as handle:
             handle.write("\n".join(credentials) + "\n")
-    print("Accounts ready. Local credentials: runtime/demo-accounts.txt (gitignored).")
+    print(
+        f"Accounts ready. Local credentials: {destination} (keep private, gitignored in default runtime)."
+    )
 
 
 if __name__ == "__main__":

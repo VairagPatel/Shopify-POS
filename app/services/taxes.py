@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import date
 from typing import Mapping, Sequence
+from app.constants import BASIS_POINTS_PER_UNIT
 
 
 # Round a nonnegative integer ratio using half-up money semantics.
@@ -50,7 +51,7 @@ class TaxCatalog:
                 f"Expected exactly one active GST rate for HSN {hsn} on {on_date}; found {len(candidates)}"
             )
         rate = int(candidates[0]["rate_bps"])
-        if rate < 0 or rate > 10000:
+        if rate < 0 or rate > BASIS_POINTS_PER_UNIT:
             raise ValueError("GST rate out of range")
         return rate
 
@@ -71,7 +72,9 @@ def inclusive_tax_line(
     if not 0 <= discount_paise <= gross:
         raise ValueError("Discount cannot exceed line gross")
     total = gross - discount_paise
-    taxable = rounded_div(total * 10000, 10000 + rate_bps)
+    taxable = rounded_div(
+        total * BASIS_POINTS_PER_UNIT, BASIS_POINTS_PER_UNIT + rate_bps
+    )
     tax = total - taxable
     cgst = rounded_div(tax, 2)
     sgst = tax - cgst  # ensure exact paisa reconciliation on odd tax amounts

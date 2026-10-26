@@ -33,6 +33,7 @@ def main():
     runtime.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("ELUNO_DB_PATH", str(runtime / "eluno.sqlite3"))
     os.environ["ELUNO_MOCK_URL"] = f"http://127.0.0.1:{arguments.mock_port}"
+    os.environ['ELUNO_PRIVATE_LOOKUP'] = '1'
     from app.persistence.sqlite import SQLiteStore
     from app.security import initialize_security, provision_user
 

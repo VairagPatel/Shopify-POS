@@ -8,11 +8,11 @@ from test_production_matrix import production_env, identity_template, backend
 # Build the same wearer-based request the cashier screen submits.
 def cart(ids, **changes):
     return {
-        "phone": "+919000000005",
+        "phone": "+919000000004",
         "store_code": "HSR",
         "staff_id": "S105",
         "variant_ids": [],
-        "members": [{"phone": "+919000000005", "variant_ids": ids}],
+        "members": [{"phone": "+919000000004", "variant_ids": ids}],
         **changes,
     }
 
@@ -21,8 +21,8 @@ def cart(ids, **changes):
 @pytest.mark.parametrize(
     "ids",
     [
-        [91000003, 91000005],
-        [91000003, 91000003],
+        [91000003, 91000083],
+        [91000003, 91000083, 91000005, 91000084],
         [91000003, 91000005, 91000083, 91000084],
     ],
 )
@@ -57,7 +57,7 @@ def test_combined_quantity_cannot_exceed_stock(production_env):
     clients, _, source, _ = production_env
     stock = source.stock(92000003, 70000002)
     response = clients("cashier").post(
-        "/sales/prepare", json=cart([91000003] * (stock + 1))
+        "/sales/prepare", json=cart([91000003, 91000083] * (stock + 1))
     )
     assert response.status_code == 422, response.text
 
@@ -67,8 +67,8 @@ def test_stale_quote_cannot_charge_after_stock_consumed(production_env):
     clients, store, source, _ = production_env
     client = clients("cashier")
     stock = source.stock(92000003, 70000002)
-    first = client.post("/sales/prepare", json=cart([91000003])).json()["checkout_id"]
-    second = client.post("/sales/prepare", json=cart([91000003] * stock))
+    first = client.post("/sales/prepare", json=cart([91000003, 91000083])).json()["checkout_id"]
+    second = client.post("/sales/prepare", json=cart([91000003, 91000083] * stock))
     assert second.status_code == 200, second.text
     assert (
         client.post("/sales/" + second.json()["checkout_id"] + "/complete").status_code
@@ -86,7 +86,7 @@ def test_concurrent_completion_is_idempotent(production_env):
     before = source.stock(92000003, 70000002)
     identifier = (
         clients("cashier")
-        .post("/sales/prepare", json=cart([91000003]))
+        .post("/sales/prepare", json=cart([91000003, 91000083]))
         .json()["checkout_id"]
     )
 
@@ -113,7 +113,7 @@ def test_completed_cash_refund_repeat_after_close(production_env):
     )
     sale = (
         clients("cashier")
-        .post("/sales/prepare", json=cart([91000003], payment_method="cash"))
+        .post("/sales/prepare", json=cart([91000003, 91000083], payment_method="cash"))
         .json()["checkout_id"]
     )
     assert clients("cashier").post("/sales/" + sale + "/complete").status_code == 200
@@ -146,8 +146,8 @@ def test_family_sunglasses_and_prescription_pair(production_env):
         json=cart(
             [],
             members=[
-                {"phone": "+919000000005", "variant_ids": [sunglasses["id"]]},
-                {"phone": "+919000000005", "variant_ids": [91000003, 91000083]},
+                {"phone": "+919000000004", "variant_ids": [sunglasses["id"]]},
+                {"phone": "+919000000004", "variant_ids": [91000003, 91000083]},
             ],
         ),
     )

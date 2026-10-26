@@ -48,6 +48,7 @@ def production_env(tmp_path, monkeypatch, identity_template, backend):
     destination = tmp_path / "application.sqlite3"
     shutil.copyfile(path, destination)
     monkeypatch.setenv("ELUNO_DB_PATH", str(destination))
+    monkeypatch.setenv('ELUNO_PRIVATE_LOOKUP', '0')
     monkeypatch.setenv("ELUNO_MOCK_URL", str(backend.client.base_url))
     store = SQLiteStore(str(destination))
 
@@ -77,7 +78,7 @@ def test_role_endpoint_matrix(production_env, role, case):
     method, url, _, allowed, expected, body = case
     if body == "sale":
         body = {
-            "phone": "+919000000005",
+            "phone": "+919000000004",
             "store_code": "HSR",
             "staff_id": sessions[role][2],
             "variant_ids": [91000003, 91000083],

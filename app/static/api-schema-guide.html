@@ -1,0 +1,2631 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Eluno · API, schema and customer identity guide</title><style>
+    :root{--ink:#23372e;--muted:#617169;--paper:#f6f5ee;--line:#dce1d7;--orange:#ed862c;--green:#315d48}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.7 system-ui,sans-serif}aside{position:fixed;inset:0 auto 0 0;width:244px;padding:28px 23px;background:#eef1e9;border-right:1px solid var(--line);overflow-y:auto}.brand{font-size:39px;letter-spacing:-3px;font-weight:800}.brand i{color:var(--orange);font-style:normal}.eyebrow{font-size:10px;font-weight:750;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}nav{margin:24px 0}nav a{display:block;padding:7px 0;font-size:12px;text-decoration:none;color:var(--green);border-bottom:1px solid var(--line)}nav a:hover{color:#aa4e10}main{margin-left:244px;padding:64px clamp(24px,5vw,80px);max-width:1520px}header{border-bottom:1px solid var(--line);padding-bottom:40px}h1{font-size:clamp(38px,5.5vw,74px);letter-spacing:-3px;line-height:1.08;margin:22px 0 25px}h1 em{color:#b85d1c;font-style:normal}h2{font-size:31px;letter-spacing:-.8px;line-height:1.25;margin:10px 0 23px}h3{font-size:18px;line-height:1.35;margin:14px 0 10px}p{margin:10px 0 18px}section{padding:45px 0;border-bottom:1px solid var(--line)}.intro{font-size:21px;color:var(--muted);max-width:850px}.tag{display:inline-block;padding:4px 9px;background:#e5eee5;color:#2c5e41;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap}.amber{background:#fff0d9;color:#985018}.cards{display:grid;gap:16px;margin:24px 0}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:repeat(2,minmax(0,1fr))}article,.talk-track{padding:24px;border:1px solid var(--line);background:#fffef9;border-radius:12px}article h3:first-child{margin-top:0}article p:last-child{margin-bottom:0}.muted,.evidence{font-size:12px;color:var(--muted)}.note{padding:18px 22px;border-left:4px solid var(--orange);background:#fff1df;margin:24px 0}.say{padding:25px 30px;background:var(--ink);color:#f7f6ed;border-radius:13px;margin:26px 0}.say span{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#c9d8ca}.say p{font-size:21px;line-height:1.6;margin:12px 0 0}.table-wrap{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:13px;text-align:left}th,td{padding:13px;border-bottom:1px solid var(--line);vertical-align:top}th{background:#e6ece2;font-size:10px;letter-spacing:1px;text-transform:uppercase}td:first-child{font-weight:600}td{min-width:130px}.chapter-number{color:#a1561d}ul,ol{padding-left:22px}li{margin:7px 0}.timeline{list-style:none;padding:0;counter-reset:step}.timeline li{position:relative;counter-increment:step;border-left:2px solid #d7dfd2;margin-left:19px;padding:4px 0 15px 38px}.timeline li:before{content:counter(step);position:absolute;left:-18px;top:0;background:#f5e3c7;border:4px solid var(--paper);width:34px;height:34px;border-radius:50%;text-align:center;line-height:26px;font-size:12px;font-weight:800}.timeline p{font-size:14px;margin:6px 0}.dependency{padding:18px;background:#e8eee3;border-radius:8px;font-size:13px}.tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:24px 0 6px}.tools label{font-size:12px}.tools input{flex:1;min-width:180px}input,select,button{font:inherit;font-size:13px;padding:10px 13px;border:1px solid #b8c6b8;background:#fffef9;color:var(--ink);border-radius:6px}button{cursor:pointer}button:hover{background:#e7eee3}details{border:1px solid var(--line);border-radius:10px;background:#fffef9;padding:17px 20px;margin:12px 0}summary{cursor:pointer;font-weight:600}details[open] summary{margin-bottom:15px}.ticket summary{display:flex;align-items:center;gap:14px;list-style:none}.ticket summary:before{content:'+';color:#a45c20;font-size:21px}.ticket[open] summary:before{content:'−'}.ticket summary strong{flex:1}.ticket-id{font-size:11px;color:var(--muted)}.ticket-meta{font-size:12px;color:var(--muted);margin:12px 0}.ticket p{font-size:14px}.ticket .evidence{font-size:12px;overflow-wrap:anywhere}.diagram{background:#fffef9;border:1px solid var(--line);border-radius:13px;padding:20px}svg{width:100%;height:auto}.big{font-size:43px;letter-spacing:-1.5px;line-height:1.2;font-weight:750;margin:15px 0}.flow{display:flex;align-items:stretch;gap:8px;margin:25px 0;flex-wrap:wrap}.flow span{flex:1;background:#e7eee2;border-radius:8px;padding:16px;text-align:center;font-size:13px;min-width:90px}.flow b{align-self:center;color:#ae672c}.state-path{background:#e6ede3;padding:25px;border-radius:9px;line-height:2.2}code{font:12px/1.6 ui-monospace,monospace;background:#e4e8de;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}figure{margin:25px 0}figure img{width:100%;height:auto;border:1px solid var(--line);border-radius:10px}figcaption{font-size:11px;color:var(--muted);margin-top:8px}.cover-meta{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}.cover-meta span{font-size:11px;background:#e8ece2;padding:7px 10px;border-radius:5px}.print-button{width:100%}footer{padding:28px 0;color:var(--muted);font-size:12px}a{color:var(--green)}[hidden]{display:none!important}:focus-visible{outline:3px solid var(--orange);outline-offset:4px}
+    @media(max-width:1050px){aside{position:static;width:auto;padding:18px 25px}nav{display:flex;gap:18px;overflow:auto;margin:12px 0 0}nav a{white-space:nowrap;border:0}aside .print-button,aside>.muted{display:none}main{margin:0;padding:35px 25px}.three{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:600px){main{padding:30px 18px}h1{font-size:43px;letter-spacing:-2px}h2{font-size:27px}.three,.two{grid-template-columns:1fr}.ticket summary{flex-wrap:wrap}.ticket summary strong{flex-basis:65%}.ticket summary .tag{margin-left:29px}.diagram{padding:4px}.tools{align-items:stretch}.say p{font-size:18px}th,td{padding:10px}.flow b{display:none}}
+    @media print{aside,.tools,#ticket-count{display:none}main{margin:0;padding:0;max-width:none}body{background:white;font-size:10pt}h1{font-size:38pt}h2{font-size:22pt}.intro{font-size:13pt}section{padding:24px 0}.cards{gap:10px}article{padding:15px}table{font-size:9pt}th,td{padding:8px}.table-wrap{overflow:visible}tr,article,details,.say{break-inside:avoid}.say{background:#e9eee4;color:#23372e}.say span{color:#617169}.say p{font-size:13pt}.diagram{break-inside:avoid}figure img{max-height:230mm;object-fit:contain}figure{break-inside:avoid}.chapter-number{color:#617169}details{display:block}.ticket summary{font-size:11pt}.ticket p{font-size:10pt}a{color:inherit}}
+    pre{padding:20px;background:#23372e;color:#f4f5ea;border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.7;max-height:650px;overflow:auto}pre code{background:none;color:inherit;padding:0}.field{font-family:monospace;font-size:12px}summary{overflow-wrap:anywhere}.data-search[hidden]{display:none!important}@media print{pre{max-height:none;overflow:visible;background:#edf1e8;color:#23372e}pre code{color:inherit}.search-panel{display:none}}</style></head><body><aside><div class="brand">eluno<i>.</i></div><div class="eyebrow">API & schema guide</div><nav><a href="#start">01 · Lookup vs creation</a><a href="#phone">02 · Phone standard</a><a href="#privacy">03 · Privacy boundaries</a><a href="#linkage">04 · Prescription attachment</a><a href="#records">05 · Fields & examples</a><a href="#creation">06 · Proposed registration</a><a href="#external">07 · External API inventory</a><a href="#internal">08 · Internal API inventory</a><a href="#models">09 · All schema definitions</a><a href="#database">10 · Database relationships</a><a href="#verification">11 · Verification walkthrough</a></nav><button id="print">Print / save complete PDF</button></aside><main><header><span class="tag amber">IMPLEMENTATION + PROPOSED DESIGN</span><h1>One customer.<br><em>Clear identities.<br>Traceable records.</em></h1><p class="intro">Every lookup, phone format, prescription relationship and API boundary—explained with the actual schemas and source examples.</p><p>Snapshot: 25 October 2026 · 36 schema-visible operations · 20 reusable schemas · 19 table definitions.</p><div class="note">Existing-customer lookup and phone privacy are implemented changes. Customer registration and a full customer-ID-based clinical redesign are proposals. This guide labels the difference.</div></header><section id="start"><h2>1. Customer lookup is not customer creation</h2>
+    <p class="intro">The current “Add wearer” action adds an existing person to a bill. It does not create a new Shopify customer.</p>
+    <p>We now call <code>POST /api/customers</code> with a JSON body. This remains a lookup despite using POST: the phone is private request input, so it should not appear in a query string.</p>
+    <pre><code>{
+  &quot;phone&quot;: &quot;9000000005&quot;
+}</code></pre>
+    <div class="flow"><span>Enter phone</span><b>→</b><span>Normalize to +91</span><b>→</b><span>Find source customer</span><b>→</b><span>Read source + local Rx</span><b>→</b><span>Add wearer to bill</span></div>
+    <p>A missing source customer returns <strong>404</strong>. The app does not invent a local customer or create a source account automatically. New-customer registration is described in chapter 6 as proposed work, as requested.</p>
+    <div class="note">The previous <code>GET /api/customers?phone=...</code> contract is retired. It now returns 405. This is an intentional API compatibility change for privacy. Swagger, frontend lookup and automated callers were updated.</div>
+    <p>A schema describes fields, types and validation. An API is the action that accepts or returns those fields. A database table is where selected records are stored. They are related but not interchangeable.</p>
+    </section><section id="phone"><h2>2. One phone format everywhere</h2><div class="table-wrap"><table><thead><tr><th>Input example</th><th>Stored / used for lookup</th></tr></thead><tbody><tr><td>9000000005</td><td>+919000000005</td></tr><tr><td>+919000000005</td><td>+919000000005</td></tr><tr><td>919000000005</td><td>+919000000005</td></tr><tr><td>09000000005</td><td>+919000000005</td></tr><tr><td>+91 90000-00005</td><td>+919000000005</td></tr><tr><td>(90000) 00005</td><td>+919000000005</td></tr></tbody></table></div>
+    <p><strong>Rule:</strong> this demo accepts Indian mobile numbers only. Keep phone as a string, remove permitted formatting spaces/brackets/hyphens, recognize +91 / 91 / a leading domestic 0, then require ten digits beginning with 6–9. Store and compare the result as <code>+91</code> plus those ten digits.</p>
+    <p>Reject missing values, numeric JSON values, letters, unsupported country codes, extra digits and non-ASCII digit lookalikes. We do not silently guess the country. Formatting is not proof that a phone belongs to the customer; no OTP verification is implemented.</p>
+    <div class="table-wrap"><table><thead><tr><th>Boundary</th><th>Current normalization</th></tr></thead><tbody><tr><td>POST /api/customers</td><td>Typed CustomerLookupRequest → PhoneNumber → source lookup. Customer response uses the same normalized format.</td></tr><tr><td>POST /sales/prepare</td><td>Normalize payer phone and every member phone, including direct SaleService calls.</td></tr><tr><td>POST /api/prescriptions</td><td>Typed clinical request; save canonical phone alongside source customer_id.</td></tr><tr><td>POST /api/remakes/prepare</td><td>Typed wearer_phone input uses the same rule.</td></tr><tr><td>PUT /api/draft</td><td>Canonicalize wearer phone entries before saving the JSON draft.</td></tr><tr><td>Source adapters / local Rx overlay</td><td>Normalize before querying source or the local prescriptions table.</td></tr><tr><td>Browser cart</td><td>Use the normalized phone returned by the lookup, rather than saving the typed variation.</td></tr></tbody></table></div>
+    <h3>Existing data is not silently rewritten</h3><p>The supplied seed already uses canonical phones. Saved historical orders, invoices and quotes are retained. This change is not a database-wide migration. If imported/old clinical records contain multiple formats, a controlled backfill and duplicate review is still needed; do not bulk-merge customers by phone without checking identity.</p>
+    <h3>Use customer IDs as long-term identity</h3><p>A phone can change or be shared by a family. The source <code>customer.id</code> is a better long-term relationship key. The current exercise store-tool lookup is by phone; local clinical writes also retain <code>customer_id</code>. A production redesign should query/link prescriptions by customer ID and treat phone as a searchable contact field. That redesign is proposed, not implemented here.</p>
+    </section><section id="privacy"><h2>3. Phone privacy: browser, adapter and logs</h2>
+    <div class="cards two"><article><span class="tag">Changed in this project</span><ul><li>Browser lookup uses POST JSON, no phone query parameter.</li><li>Standard runner enables body-based customer and prescription lookup extensions.</li><li>No automatic fallback to a phone-in-URL lookup.</li><li>Standard Uvicorn access logging strips query strings.</li><li>Durable mock wrapper logs only the request path, not query values.</li></ul></article><article><span class="tag amber">Still requires care</span><ul><li>POST is not encryption. Use HTTPS for deployed traffic.</li><li>Authorized users can inspect request/response bodies in browser tools.</li><li>Phone still exists in clinical/quote/source data, receipts, draft storage and permitted responses.</li><li>Proxy, tracing, error and analytics systems need their own redaction rules.</li><li>Bootstrap still returns the synthetic customer directory; production should minimize bulk exposure.</li></ul></article></div>
+    <h3>Two external adapter modes—do not confuse them</h3>
+    <div class="table-wrap"><table><thead><tr><th>Mode</th><th>What is called</th><th>Meaning</th></tr></thead><tbody><tr><td>Default application / run_demo.py</td><td>POST /eluno/customer-lookup<br>POST /eluno/prescription-lookup</td><td>JSON body contains the normalized phone. These are additive endpoints in our durable mock wrapper. They read the existing synthetic source records directly; no phone URL is constructed.</td></tr><tr><td>Explicit legacy exercise mode</td><td>GET customers/search.json with query<br>GET /smt/prescriptions with phone</td><td>Original supplied mock contract. Opt in with ELUNO_PRIVATE_LOOKUP=0 only for compatibility/testing. It places phone upstream in the URL and does not meet the end-to-end no-phone-URL objective.</td></tr><tr><td>Future live integration</td><td>Provider-approved body-based search or an approved privacy gateway</td><td>Not implemented. Our /eluno/* routes are not official Shopify APIs and must not be presented as such.</td></tr></tbody></table></div>
+    <p>The supplied exercise mock file stays unchanged. Our wrapper adds the privacy routes and preserves the original routes. Direct <code>MockHTTP</code> defaults to the original exercise contract for low-level compatibility tests; <code>OperationsGateway</code>, used by the app, defaults to private lookup. A private lookup against an unextended source fails visibly; it does not fall back silently.</p>
+    <p><strong>Limit of the guarantee:</strong> the updated app does not generate phone-bearing lookup URLs in private mode. We cannot prevent an obsolete client from manually sending a phone in any arbitrary URL, but the retired route rejects the old method and standard app/wrapper logs strip query values. Other infrastructure logs are outside this local change.</p>
+    </section><section id="linkage"><h2>4. How a prescription gets attached to the customer and bill</h2>
+    <ol class="timeline"><li><strong>Resolve the customer.</strong><p>Phone input becomes <code>+919000000005</code>. Source lookup returns a stable customer ID, name, phone and tags.</p></li><li><strong>Read the prescription list.</strong><p>The adapter asks the store-tool source for records matching the canonical phone. OperationsGateway merges these with locally authored clinical records using that phone. Lookup returns the list; it does not attach every record to a bill.</p></li><li><strong>Create a clinical record if needed.</strong><p>An optometrist submits a typed prescription body. The backend resolves the source customer and adds <code>customer_id</code>, <code>rx_id</code>, issue timestamp and the authenticated optometrist identity. It saves this record locally. It does not send it to Shopify or write it back to the store tool.</p></li><li><strong>Select during sale preparation.</strong><p>For every lens, the backend finds the latest issued prescription whose <code>valid_until</code> has not passed. It checks both eyes, lens limits and required ADD. Source records are trusted as supplied; independent customer-ID consistency checking on imported source Rx records is not added by this change.</p></li><li><strong>Persist on the lens line.</strong><p>The quote stores the chosen <code>rx_id</code> and wearer phone. The source order lens line properties include <code>rx_id</code>, <code>wearer_phone</code> and lens configuration. Frame/lens pair references link items within a wearer.</p></li><li><strong>Keep historical evidence stable.</strong><p>A new prescription does not rewrite a completed invoice or its source order. A remake links to the original sale and creates a new lens-only checkout with the appropriate current validation.</p></li></ol>
+    <div class="dependency">CustomerRecord.id → PrescriptionRecord.customer_id<br>Canonical phone → current source/local Rx lookup<br>PrescriptionRecord.rx_id → saved quote lens line → source order line properties</div>
+    <h3>Clinical entry example</h3>
+    <pre><code>{
+  &quot;phone&quot;: &quot;9000000005&quot;,
+  &quot;od&quot;: {
+    &quot;sph&quot;: &quot;-2.00&quot;,
+    &quot;cyl&quot;: &quot;-0.50&quot;,
+    &quot;axis&quot;: 90,
+    &quot;add&quot;: &quot;1.50&quot;
+  },
+  &quot;os&quot;: {
+    &quot;sph&quot;: &quot;-1.75&quot;,
+    &quot;cyl&quot;: &quot;0.00&quot;,
+    &quot;axis&quot;: 90,
+    &quot;add&quot;: &quot;1.50&quot;
+  },
+  &quot;valid_until&quot;: &quot;2027-04-01&quot;
+}</code></pre>
+    <p>Send to <code>POST /api/prescriptions</code>. <code>od</code> is right eye; <code>os</code> is left eye. Sphere, cylinder, axis and ADD are required for both eyes. Sphere, cylinder and ADD use quarter-diopter steps; axis is an integer from 5° to 180° in five-degree steps. Enter ADD as 0.00 when none is prescribed. The validity date must be today through two years ahead. The selected lens limits are checked again before the cart can be prepared.</p>
+    <p>Do not send <code>customer_id</code> or an approver identity to impersonate another record: the current clinical handler determines those from the resolved source customer and authenticated user. The schema accepts only the documented input fields; existing source prescription records may contain extra fields such as PD and notes.</p>
+    </section><section id="records"><h2>5. Field-level records: what comes from where</h2><div class="table-wrap"><table><thead><tr><th>Record / important field</th><th>Source / type</th><th>Purpose</th></tr></thead><tbody><tr><td>CustomerRecord.id</td><td>Source integer</td><td>Stable customer identity returned by customer lookup.</td></tr><tr><td>CustomerRecord.phone</td><td>Canonical string</td><td>Search/contact value; not a safe permanent person identifier.</td></tr><tr><td>CustomerRecord.tags</td><td>Comma-separated source string</td><td>Priority/campaign/offer tags; never assume they are a JSON array.</td></tr><tr><td>PrescriptionRecord.rx_id</td><td>Source or locally generated string</td><td>Identifies one issued prescription; referenced from sold lens lines.</td></tr><tr><td>PrescriptionRecord.customer_id / phone</td><td>Integer / canonical string</td><td>Clinical customer link and current lookup key.</td></tr><tr><td>PrescriptionRecord.od / os</td><td>Nested eye records</td><td>sph, cyl, axis and add; source values may be numbers or strings.</td></tr><tr><td>date / valid_until</td><td>Date or timestamp / date string</td><td>Issue-order selection and expiry check; date-only and aware issue timestamps are supported.</td></tr><tr><td>variant.id / inventory_item_id</td><td>Two distinct source integer IDs</td><td>Variant selects a sellable option; inventory item plus location identifies physical stock.</td></tr><tr><td>variant.eluno</td><td>Supplied custom metadata object</td><td>line_type, HSN, lens type/index/coating, Rx limits and frame compatibility.</td></tr><tr><td>Cart / CartLine</td><td>Internal domain objects</td><td>Customer, store, unit prices, quantity, pair reference and prescription ID used for rules.</td></tr><tr><td>TaxLine</td><td>Internal integer-paise fields</td><td>gross, discount, discounted total, taxable, CGST and SGST; not the source decimal-string payload.</td></tr><tr><td>checkout_id / invoice_no</td><td>Local generated strings</td><td>Operation tracking versus per-store invoice numbering.</td></tr><tr><td>payment_charge_id / shopify_order_id</td><td>External returned references</td><td>Link the local operation to actual terminal/source outcomes.</td></tr><tr><td>quote.order_payload</td><td>Saved source-shaped dictionary</td><td>Prepared order data before payment; completion adds the transaction.</td></tr><tr><td>Refund payload</td><td>Source-shaped dictionary</td><td>Original line IDs, return/no_restock, store location and refund transaction parent reference.</td></tr></tbody></table></div>
+    <p>The examples below are supplied synthetic fixture records, not real customer data. They show actual source field names, including fields not directly used by billing. The source’s prescription list can include expired entries; the example is not a promise that it is the selected prescription today.</p>
+    <details><summary>Customer source record</summary><pre><code>{
+  &quot;id&quot;: 80001005,
+  &quot;first_name&quot;: &quot;Karthik&quot;,
+  &quot;last_name&quot;: &quot;Reddy&quot;,
+  &quot;phone&quot;: &quot;+919000000005&quot;,
+  &quot;email&quot;: null,
+  &quot;tags&quot;: &quot;campaign:progressive_oct26,priority&quot;,
+  &quot;total_spent&quot;: &quot;18499.00&quot;,
+  &quot;orders_count&quot;: 3,
+  &quot;accepts_marketing&quot;: true,
+  &quot;state&quot;: &quot;enabled&quot;,
+  &quot;created_at&quot;: &quot;2026-08-29T11:00:00+05:30&quot;,
+  &quot;note&quot;: null,
+  &quot;default_address&quot;: {
+    &quot;city&quot;: &quot;Bengaluru&quot;,
+    &quot;province_code&quot;: &quot;KA&quot;,
+    &quot;country_code&quot;: &quot;IN&quot;
+  },
+  &quot;eluno&quot;: {
+    &quot;dob&quot;: &quot;1984-03-05&quot;,
+    &quot;home_store&quot;: &quot;BR&quot;
+  }
+}</code></pre></details><details><summary>Prescription source record</summary><pre><code>{
+  &quot;rx_id&quot;: &quot;RX5007&quot;,
+  &quot;customer_id&quot;: 80001005,
+  &quot;phone&quot;: &quot;+919000000005&quot;,
+  &quot;date&quot;: &quot;2026-07-10&quot;,
+  &quot;source&quot;: &quot;in_store&quot;,
+  &quot;optometrist_id&quot;: &quot;S103&quot;,
+  &quot;od&quot;: {
+    &quot;sph&quot;: -3.25,
+    &quot;cyl&quot;: 0.0,
+    &quot;axis&quot;: null,
+    &quot;add&quot;: 2.5
+  },
+  &quot;os&quot;: {
+    &quot;sph&quot;: -3.5,
+    &quot;cyl&quot;: 0.0,
+    &quot;axis&quot;: null,
+    &quot;add&quot;: 2.5
+  },
+  &quot;pd&quot;: {
+    &quot;binocular&quot;: 60,
+    &quot;mono_r&quot;: null,
+    &quot;mono_l&quot;: null
+  },
+  &quot;valid_until&quot;: &quot;2027-07-10&quot;,
+  &quot;notes&quot;: &quot;external Rx photo on file&quot;
+}</code></pre></details><details><summary>Frame variant record</summary><pre><code>{
+  &quot;id&quot;: 91000003,
+  &quot;product_id&quot;: 90000003,
+  &quot;sku&quot;: &quot;FR-0003&quot;,
+  &quot;title&quot;: &quot;Tortoise&quot;,
+  &quot;option1&quot;: &quot;Tortoise&quot;,
+  &quot;price&quot;: &quot;10998.00&quot;,
+  &quot;inventory_item_id&quot;: 92000003,
+  &quot;inventory_management&quot;: &quot;shopify&quot;,
+  &quot;inventory_policy&quot;: &quot;deny&quot;,
+  &quot;requires_shipping&quot;: false,
+  &quot;taxable&quot;: true,
+  &quot;eluno&quot;: {
+    &quot;line_type&quot;: &quot;frame&quot;,
+    &quot;hsn&quot;: &quot;90031900&quot;,
+    &quot;category&quot;: &quot;optical&quot;,
+    &quot;material&quot;: &quot;stainless steel&quot;,
+    &quot;size&quot;: &quot;52-19-145&quot;,
+    &quot;rx_able&quot;: true
+  }
+}</code></pre></details><details><summary>Lens variant record</summary><pre><code>{
+  &quot;id&quot;: 91000083,
+  &quot;product_id&quot;: 90000051,
+  &quot;sku&quot;: &quot;LN-0043&quot;,
+  &quot;title&quot;: &quot;blue_cut&quot;,
+  &quot;option1&quot;: &quot;blue_cut&quot;,
+  &quot;price&quot;: &quot;9499.00&quot;,
+  &quot;inventory_item_id&quot;: null,
+  &quot;inventory_management&quot;: null,
+  &quot;requires_shipping&quot;: false,
+  &quot;taxable&quot;: true,
+  &quot;eluno&quot;: {
+    &quot;line_type&quot;: &quot;lens&quot;,
+    &quot;hsn&quot;: &quot;90015000&quot;,
+    &quot;lens_type&quot;: &quot;progressive&quot;,
+    &quot;index&quot;: 1.6,
+    &quot;coating&quot;: &quot;blue_cut&quot;,
+    &quot;rx_limits&quot;: {
+      &quot;sph_min&quot;: -8.0,
+      &quot;sph_max&quot;: 6.0,
+      &quot;cyl_abs_max&quot;: 4.0,
+      &quot;add_required&quot;: true,
+      &quot;add_min&quot;: 0.75,
+      &quot;add_max&quot;: 3.0
+    },
+    &quot;lab_tat_days&quot;: 6
+  }
+}</code></pre></details><details><summary>Lookup response shape</summary><pre><code>{
+  &quot;customer&quot;: {
+    &quot;id&quot;: 80001005,
+    &quot;phone&quot;: &quot;+919000000005&quot;,
+    &quot;first_name&quot;: &quot;Karthik&quot;,
+    &quot;last_name&quot;: &quot;Reddy&quot;,
+    &quot;tags&quot;: &quot;campaign:progressive_oct26,priority&quot;
+  },
+  &quot;prescriptions&quot;: [
+    {
+      &quot;rx_id&quot;: &quot;SOURCE_OR_LOCAL_RX_ID&quot;,
+      &quot;customer_id&quot;: 80001005,
+      &quot;phone&quot;: &quot;+919000000005&quot;,
+      &quot;date&quot;: &quot;2026-10-25T10:00:00+05:30&quot;,
+      &quot;valid_until&quot;: &quot;2027-04-01&quot;,
+      &quot;od&quot;: {
+        &quot;sph&quot;: &quot;-2.00&quot;,
+        &quot;cyl&quot;: &quot;0.00&quot;,
+        &quot;axis&quot;: null,
+        &quot;add&quot;: &quot;1.50&quot;
+      },
+      &quot;os&quot;: {
+        &quot;sph&quot;: &quot;-2.00&quot;,
+        &quot;cyl&quot;: &quot;0.00&quot;,
+        &quot;axis&quot;: null,
+        &quot;add&quot;: &quot;1.50&quot;
+      }
+    }
+  ]
+}</code></pre></details></section><section id="creation"><h2>6. Proposed new-customer registration — NOT IMPLEMENTED</h2>
+    <p>Current lookup returning 404 should lead to a clearly designed registration workflow, not a silent local insert. This is the proposed design for a future ticket; neither the endpoint nor the source create operation below is active.</p>
+    <ol><li>Staff collects name, phone and any approved optional contact/consent fields.</li><li>Normalize phone and validate fields before attempting a source write.</li><li>Search for possible duplicates. A shared family phone is a business decision, not automatic proof of the same person.</li><li>Create the customer through the approved external customer-creation adapter using a body, stable request key and a reviewed duplicate/uncertain-response strategy.</li><li>Save/use the returned source customer ID. Do not report success when only a local record exists.</li><li>Then an optometrist creates/attaches a prescription using the stable customer ID and their own identity.</li><li>Only after that should lens billing proceed.</li></ol>
+    <h3>Proposed body, not a current API contract</h3>
+    <pre><code>{
+  &quot;proposed_endpoint&quot;: &quot;POST /api/customer-registrations&quot;,
+  &quot;implemented&quot;: false,
+  &quot;request_example&quot;: {
+    &quot;first_name&quot;: &quot;Example&quot;,
+    &quot;last_name&quot;: &quot;Customer&quot;,
+    &quot;phone&quot;: &quot;9000000005&quot;,
+    &quot;email&quot;: null,
+    &quot;accepts_marketing&quot;: false,
+    &quot;request_id&quot;: &quot;CLIENT_GENERATED_UNIQUE_REGISTRATION_KEY&quot;
+  },
+  &quot;response_example&quot;: {
+    &quot;customer_id&quot;: &quot;RETURNED_SOURCE_ID&quot;,
+    &quot;phone&quot;: &quot;+919000000005&quot;,
+    &quot;created&quot;: true
+  }
+}</code></pre>
+    <div class="note"><strong>Decisions before building:</strong> whether phone must be unique, whether family wearers share a payer contact, whether OTP is needed, which roles may create/edit, how phone changes propagate, required consent and how uncertain creates are reconciled. Do not claim a uniqueness guarantee without source and database enforcement.</div>
+    <p>The supplied original mock has no customer-create route. A demo extension would have to be explicitly labelled and tested, just like our body-based lookup extension. Production creation would need a real provider contract.</p>
+    </section><section id="external"><h2>7. Every external API used by the adapter</h2><p>Unprefixed Shopify-style paths use <code>/admin/api/2026-10/</code> on the exercise mock. These are the routes used by our application/adapter, not an inventory of every unused mock-server capability. Request/response shapes below are compact; complete example records follow.</p><div class="table-wrap"><table><thead><tr><th>Method/path</th><th>Boundary</th><th>Request</th><th>Response</th><th>Effect</th></tr></thead><tbody><tr><td>POST /eluno/customer-lookup</td><td>Wrapper extension / default app</td><td>{phone: canonical string}</td><td>{customers: CustomerRecord[]}</td><td>Read source customer; none → empty list → app 404.</td></tr><tr><td>POST /eluno/prescription-lookup</td><td>Wrapper extension / default app</td><td>{phone: canonical string}</td><td>{prescriptions: PrescriptionRecord[]}</td><td>Read source Rx list; local overlay merged by OperationsGateway.</td></tr><tr><td>GET customers/search.json</td><td>Original exercise / legacy mode</td><td>query=phone:… in query string</td><td>{customers: CustomerRecord[]}</td><td>Privacy-incompatible upstream URL; original mock remains unchanged.</td></tr><tr><td>GET /smt/prescriptions</td><td>Original exercise / legacy mode</td><td>phone in query string</td><td>{prescriptions: PrescriptionRecord[]}</td><td>Privacy-incompatible original store-tool read.</td></tr><tr><td>GET locations.json</td><td>Source adapter</td><td>No body</td><td>{locations: [{id,name,eluno}]}</td><td>Store/location and invoice-prefix mapping; HQ is warehouse.</td></tr><tr><td>GET products.json</td><td>Source adapter</td><td>limit query</td><td>{products: [{id,title,variants}]}</td><td>Bootstrap catalog; variants nested under product.</td></tr><tr><td>GET variants/{id}.json</td><td>Source adapter</td><td>Variant ID path</td><td>{variant: {...}}</td><td>Authoritative price, inventory item ID, HSN and clinical metadata.</td></tr><tr><td>GET inventory_levels.json</td><td>Source adapter</td><td>inventory_item_ids + location_ids</td><td>{inventory_levels: [{inventory_item_id,location_id,available}]}</td><td>Read availability; no stock reservation.</td></tr><tr><td>GET /smt/staff</td><td>Store tool</td><td>store query</td><td>{staff: [{staff_id,store_code,can_override_discount,...}]}</td><td>Select/validate store staff.</td></tr><tr><td>POST /terminal/charges</td><td>Terminal</td><td>{order_ref,amount_paise,method}</td><td>Charge record including charge_id</td><td>Financial write, sent once. UPI/card; cash bypasses terminal.</td></tr><tr><td>GET /terminal/charges/{id}</td><td>Terminal adapter capability</td><td>Known charge ID path</td><td>Charge status record</td><td>Available adapter read; not a guarantee of automatic recovery if no charge ID was received.</td></tr><tr><td>POST orders.json</td><td>Source adapter</td><td>{order: {customer,location_id,line_items,taxes_included,discount_applications,note_attributes,transactions,...}}</td><td>{order: source Order}</td><td>Paid sale and source stock decrement; local state links returned ID.</td></tr><tr><td>GET orders.json</td><td>Source adapter</td><td>status=any, limit</td><td>{orders: Order[]}</td><td>Report/reconcile; report rejects capped results at 250.</td></tr><tr><td>GET orders/{id}.json</td><td>Source adapter</td><td>Source order ID path</td><td>{order: Order}</td><td>Evidence and original refund/remake checks.</td></tr><tr><td>POST orders/{id}/refunds/calculate.json</td><td>Source adapter</td><td>{refund: {refund_line_items}}</td><td>{refund: calculated lines and suggested transactions}</td><td>Prepare full amount/original-tax validation. Not the final refund write.</td></tr><tr><td>POST /terminal/refunds</td><td>Terminal</td><td>{charge_id,amount_paise,reason}</td><td>Terminal refund record including refund_id</td><td>Returns electronic payment; do not blindly repeat uncertainty.</td></tr><tr><td>POST orders/{id}/refunds.json</td><td>Source adapter</td><td>{refund: {refund_line_items,transactions,note,note_attributes}}</td><td>{refund: source Refund}</td><td>Record source reversal; frame return at original location, lens no_restock.</td></tr></tbody></table></div>
+    <h3>Paid source order: important nested fields</h3>
+    <pre><code>{
+  &quot;order&quot;: {
+    &quot;customer&quot;: {
+      &quot;id&quot;: 80001005
+    },
+    &quot;location_id&quot;: 70000002,
+    &quot;taxes_included&quot;: true,
+    &quot;inventory_behaviour&quot;: &quot;decrement_obeying_policy&quot;,
+    &quot;source_name&quot;: &quot;eluno-pos&quot;,
+    &quot;line_items&quot;: [
+      {
+        &quot;variant_id&quot;: 91000083,
+        &quot;quantity&quot;: 1,
+        &quot;price&quot;: &quot;SOURCE_GROSS_PRICE_DECIMAL&quot;,
+        &quot;total_discount&quot;: &quot;LINE_DISCOUNT_DECIMAL&quot;,
+        &quot;properties&quot;: [
+          {
+            &quot;name&quot;: &quot;line_type&quot;,
+            &quot;value&quot;: &quot;lens&quot;
+          },
+          {
+            &quot;name&quot;: &quot;hsn&quot;,
+            &quot;value&quot;: &quot;CONFIGURED_HSN&quot;
+          },
+          {
+            &quot;name&quot;: &quot;rx_id&quot;,
+            &quot;value&quot;: &quot;SELECTED_RX_ID&quot;
+          },
+          {
+            &quot;name&quot;: &quot;wearer_phone&quot;,
+            &quot;value&quot;: &quot;+919000000005&quot;
+          },
+          {
+            &quot;name&quot;: &quot;lens_config&quot;,
+            &quot;value&quot;: &quot;TYPE/INDEX/COATING&quot;
+          }
+        ],
+        &quot;tax_lines&quot;: [
+          {
+            &quot;title&quot;: &quot;CGST&quot;,
+            &quot;rate&quot;: &quot;HALF_RATE_FRACTION&quot;,
+            &quot;price&quot;: &quot;LINE_CGST_DECIMAL&quot;
+          },
+          {
+            &quot;title&quot;: &quot;SGST&quot;,
+            &quot;rate&quot;: &quot;HALF_RATE_FRACTION&quot;,
+            &quot;price&quot;: &quot;LINE_SGST_DECIMAL&quot;
+          }
+        ],
+        &quot;discount_allocations&quot;: [
+          {
+            &quot;amount&quot;: &quot;ALLOCATED_DECIMAL&quot;,
+            &quot;discount_application_index&quot;: 0
+          }
+        ]
+      }
+    ],
+    &quot;discount_applications&quot;: [
+      &quot;APPLIED_SOURCE_DISCOUNT_OBJECTS&quot;
+    ],
+    &quot;note_attributes&quot;: [
+      {
+        &quot;name&quot;: &quot;checkout_id&quot;,
+        &quot;value&quot;: &quot;LOCAL_CHECKOUT_UUID&quot;
+      },
+      {
+        &quot;name&quot;: &quot;invoice_no&quot;,
+        &quot;value&quot;: &quot;STORE_INVOICE_NUMBER&quot;
+      },
+      {
+        &quot;name&quot;: &quot;store_code&quot;,
+        &quot;value&quot;: &quot;HSR&quot;
+      },
+      {
+        &quot;name&quot;: &quot;staff_id&quot;,
+        &quot;value&quot;: &quot;S105&quot;
+      }
+    ],
+    &quot;transactions&quot;: [
+      {
+        &quot;kind&quot;: &quot;sale&quot;,
+        &quot;status&quot;: &quot;success&quot;,
+        &quot;gateway&quot;: &quot;razorpay_terminal&quot;,
+        &quot;amount&quot;: &quot;SAVED_TOTAL_DECIMAL&quot;,
+        &quot;authorization&quot;: &quot;CAPTURED_CHARGE_ID&quot;
+      }
+    ]
+  }
+}</code></pre>
+    <p class="muted">Placeholders explain the mapping; this object is not executable sample pricing. Each actual item has calculated amounts and complete metadata. The prepared quote lacks the final payment transaction until completion. Phone remains in authorized order properties; removing phone from URLs does not remove it from the data model.</p>
+    </section><section id="internal"><h2>8. All internal app APIs: actual OpenAPI contracts</h2>
+    <p>The following inventory is generated from <code>app.openapi()</code>. It includes each registered schema-visible method/path with its actual parameters, body and response schemas. Reusable <code>$ref</code> names resolve in chapter 9. Session cookie authentication and CSRF on every POST/PUT apply unless the route is public.</p>
+    <p><strong>Documentation limit:</strong> some existing handlers return generic dictionaries and their response OpenAPI schema is empty/permissive. That is not a fully enforced output contract. We show the actual schema rather than inventing validation. Customer lookup and clinical inputs now have explicit nested models; other output contracts still need future tightening.</p><p>400/422 indicates invalid input; 401 no session; 403 permission/CSRF/store failure; 404 unknown record; 409 incompatible operation state; 502 upstream error. An HTTP error alone does not prove that an already-attempted external payment failed—inspect saved state.</p>
+    <div class="search-panel tools"><label for="schema-search">Search API or schema</label><input id="schema-search" type="search" placeholder="customer, phone, refund, tax…"><button id="expand" type="button">Expand visible entries</button></div><p id="search-count" class="muted" aria-live="polite"></p>
+    <details class="data-search"><summary><code>GET /health</code> — Health</summary><p><b>Allowed roles:</b> Public</p><p></p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /checkouts/{checkout_id}</code> — Inspect durable local checkout state</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Reads SQLite only. Shows which financial stage finished, external references and completion duration stored directly on the checkout row; this does not fetch the source order.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;checkout_id&quot;,
+    &quot;in&quot;: &quot;path&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Checkout Id&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/CheckoutStateSchema&quot;
+        }
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /sales/prepare</code> — 3. Prepare a validated quote</summary><p><b>Allowed roles:</b> admin, cashier, manager</p><p>Reads customer, variants, billing location and stock from Shopify; staff and wearer prescriptions from SMT/local clinical records. A wearer can bill frame/lens pairs, ready-to-wear or prescription sunglasses, or lens-only pairs through lens_only_variant_ids. Every lens is validated against that wearer&#x27;s prescription and carried on its Shopify line; standalone lens pairs have no frame pair_ref and do not affect frame inventory. Calculates effective-date HSN GST and discounts from local data. No coupon is applied unless selected_offer_id is supplied; then the server rechecks dates and cart/customer conditions and applies only that coupon. No manager discount is applied unless both override_bps and reason_code are provided with an authorized identity. Manager discount is exclusive of a coupon. Saves quote/order_payload in SQLite and reserves a store invoice number. Returns checkout_id. It does NOT charge payment, create a Shopify order or reserve physical inventory.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;content&quot;: {
+    &quot;application/json&quot;: {
+      &quot;schema&quot;: {
+        &quot;$ref&quot;: &quot;#/components/schemas/PrepareRequest&quot;
+      },
+      &quot;examples&quot;: {
+        &quot;single_pair&quot;: {
+          &quot;summary&quot;: &quot;One customer / one pair — manager S108&quot;,
+          &quot;value&quot;: {
+            &quot;phone&quot;: &quot;+919000000004&quot;,
+            &quot;store_code&quot;: &quot;HSR&quot;,
+            &quot;staff_id&quot;: &quot;S108&quot;,
+            &quot;variant_ids&quot;: [
+              91000003,
+              91000083
+            ],
+            &quot;payment_method&quot;: &quot;upi&quot;,
+            &quot;channel&quot;: &quot;walk_in&quot;
+          }
+        },
+        &quot;one_selected_coupon&quot;: {
+          &quot;summary&quot;: &quot;Apply only the selected coupon&quot;,
+          &quot;value&quot;: {
+            &quot;phone&quot;: &quot;+919000000004&quot;,
+            &quot;store_code&quot;: &quot;HSR&quot;,
+            &quot;staff_id&quot;: &quot;S108&quot;,
+            &quot;variant_ids&quot;: [
+              91000003,
+              91000083
+            ],
+            &quot;payment_method&quot;: &quot;upi&quot;,
+            &quot;channel&quot;: &quot;walk_in&quot;,
+            &quot;selected_offer_id&quot;: &quot;FESTIVE10&quot;
+          }
+        },
+        &quot;lens_only_pair&quot;: {
+          &quot;summary&quot;: &quot;Sell one prescription lens pair without a frame&quot;,
+          &quot;value&quot;: {
+            &quot;phone&quot;: &quot;+919000000004&quot;,
+            &quot;store_code&quot;: &quot;HSR&quot;,
+            &quot;staff_id&quot;: &quot;S108&quot;,
+            &quot;variant_ids&quot;: [],
+            &quot;payment_method&quot;: &quot;upi&quot;,
+            &quot;channel&quot;: &quot;walk_in&quot;,
+            &quot;members&quot;: [
+              {
+                &quot;phone&quot;: &quot;+919000000004&quot;,
+                &quot;variant_ids&quot;: [],
+                &quot;lens_only_variant_ids&quot;: [
+                  91000083
+                ]
+              }
+            ]
+          }
+        },
+        &quot;exact_manager_discount&quot;: {
+          &quot;summary&quot;: &quot;Apply the entered 5% manager discount only&quot;,
+          &quot;value&quot;: {
+            &quot;phone&quot;: &quot;+919000000004&quot;,
+            &quot;store_code&quot;: &quot;HSR&quot;,
+            &quot;staff_id&quot;: &quot;S108&quot;,
+            &quot;variant_ids&quot;: [
+              91000003,
+              91000083
+            ],
+            &quot;payment_method&quot;: &quot;upi&quot;,
+            &quot;channel&quot;: &quot;walk_in&quot;,
+            &quot;override_bps&quot;: 500,
+            &quot;reason_code&quot;: &quot;walk_out_retention&quot;,
+            &quot;selected_offer_id&quot;: &quot;MANAGER_OVERRIDE&quot;
+          }
+        },
+        &quot;family&quot;: {
+          &quot;summary&quot;: &quot;Three wearers / three prescriptions / one invoice&quot;,
+          &quot;value&quot;: {
+            &quot;phone&quot;: &quot;+919000000004&quot;,
+            &quot;store_code&quot;: &quot;HSR&quot;,
+            &quot;staff_id&quot;: &quot;S108&quot;,
+            &quot;variant_ids&quot;: [],
+            &quot;payment_method&quot;: &quot;upi&quot;,
+            &quot;channel&quot;: &quot;walk_in&quot;,
+            &quot;members&quot;: [
+              {
+                &quot;phone&quot;: &quot;+919000000013&quot;,
+                &quot;variant_ids&quot;: [
+                  91000003,
+                  91000083
+                ]
+              },
+              {
+                &quot;phone&quot;: &quot;+919000000004&quot;,
+                &quot;variant_ids&quot;: [
+                  91000005,
+                  91000083
+                ]
+              },
+              {
+                &quot;phone&quot;: &quot;+919000000015&quot;,
+                &quot;variant_ids&quot;: [
+                  91000006,
+                  91000083
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  &quot;required&quot;: true
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/QuoteResult&quot;
+        }
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /sales/{checkout_id}/complete</code> — 4. Confirm payment and create the source order</summary><p><b>Allowed roles:</b> admin, cashier, manager</p><p>For UPI/card: POST terminal /terminal/charges, persist charge reference, then POST Shopify orders.json with the saved lines, discounts, tax, location, invoice/checkout metadata and a successful payment transaction. Shopify creates the order and decrements tracked stock at that store. Cash and zero-charge remakes use their own local payment handling. A successful repeat returns the same order. An uncertain result is blocked for investigation.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;checkout_id&quot;,
+    &quot;in&quot;: &quot;path&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Checkout Id&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/CheckoutStateSchema&quot;
+        }
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /sales/{checkout_id}/reconcile-order</code> — Recover an uncertain order without posting again</summary><p><b>Allowed roles:</b> admin, manager</p><p>Searches source orders for the saved checkout identifier. It never automatically recharges or reposts an order.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;checkout_id&quot;,
+    &quot;in&quot;: &quot;path&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Checkout Id&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /refunds/prepare</code> — 6a. Preview original-line refund and tax</summary><p><b>Allowed roles:</b> admin, manager</p><p>GETs the original Shopify order, then POSTs refunds/calculate.json to obtain refundable lines/tax/maximum amount. Saves a local refund attempt. A calculation POST is not a financial refund: no terminal refund or restock occurs yet. Returns refund_id.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;content&quot;: {
+    &quot;application/json&quot;: {
+      &quot;schema&quot;: {
+        &quot;$ref&quot;: &quot;#/components/schemas/RefundPrepareRequest&quot;
+      },
+      &quot;example&quot;: {
+        &quot;checkout_id&quot;: &quot;PASTE_RETURNED_CHECKOUT_ID&quot;,
+        &quot;reason&quot;: &quot;customer_return&quot;
+      }
+    }
+  },
+  &quot;required&quot;: true
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/RefundPreviewSchema&quot;
+        }
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /refunds/{refund_id}</code> — Refund State</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Return the saved refund status and external references.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;refund_id&quot;,
+    &quot;in&quot;: &quot;path&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Refund Id&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /refunds/{refund_id}/complete</code> — 6b. Refund payment and write back to Shopify</summary><p><b>Allowed roles:</b> admin, manager</p><p>For electronic payment: POST terminal /terminal/refunds, persist its reference, then POST Shopify orders/{id}/refunds.json. Physical frames use return at the original billing location; lenses use no_restock. The source refund reverses the original line tax. Cash refunds require an open drawer.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;refund_id&quot;,
+    &quot;in&quot;: &quot;path&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Refund Id&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /refunds/{refund_id}/reconcile-shopify</code> — Recover an uncertain source refund without refunding twice</summary><p><b>Allowed roles:</b> admin, manager</p><p>GETs the original source order and matches eluno_refund_id. It does not repeat the terminal refund or source write.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;refund_id&quot;,
+    &quot;in&quot;: &quot;path&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Refund Id&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /reports/day-end</code> — Original order-day report contract</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Preserved API: counts refunds on orders from the selected order date regardless of refund date. Use /api/reports for the newer refund-event-date view.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;store_code&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;example&quot;: &quot;HSR&quot;
+  },
+  {
+    &quot;name&quot;: &quot;date&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Date&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /</code> — Homepage</summary><p><b>Allowed roles:</b> Public</p><p>Serve the laptop interface from the same origin as the API.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /auth/login</code> — 1. Sign in directly in Swagger</summary><p><b>Allowed roles:</b> Public</p><p>Authenticates a provisioned account and sets an HttpOnly session cookie. Use manager / S108 for the HSR examples, or admin. Credentials are never embedded in the schema.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;content&quot;: {
+    &quot;application/json&quot;: {
+      &quot;schema&quot;: {
+        &quot;$ref&quot;: &quot;#/components/schemas/Credentials&quot;
+      }
+    }
+  },
+  &quot;required&quot;: true
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /auth/me</code> — Inspect the signed-in role and store</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Returns the authenticated identity and CSRF token. Swagger uses this automatically for write requests.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /auth/logout</code> — Logout</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Delete the session server-side and expire the browser cookie.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/bootstrap</code> — 2a. Discover stores, products and variant IDs</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Reads Shopify mock locations and products plus SMT staff. The customer search directory is a local synthetic fixture; /api/customers performs the live source lookup.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /api/customers</code> — 2b. Fetch the customer and prescriptions</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Existing-customer lookup, not registration. Supply phone in a JSON body; it is normalized to +91 plus ten digits. The standard demo runner uses body-based /eluno/customer-lookup and /eluno/prescription-lookup extensions in its durable mock wrapper. Explicit legacy adapter mode uses the original exercise GET contracts, which put phone in upstream URLs. Local clinician records are merged with source prescriptions; sale preparation chooses the latest valid one. Requires session and CSRF.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;content&quot;: {
+    &quot;application/json&quot;: {
+      &quot;schema&quot;: {
+        &quot;$ref&quot;: &quot;#/components/schemas/CustomerLookupRequest&quot;
+      }
+    }
+  },
+  &quot;required&quot;: true
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/CustomerLookupResponse&quot;
+        }
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/inventory</code> — 2c. Check stock at the billing store</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Reads Shopify location mapping and inventory_levels.json. Keep inventory_item_id separate from variant_id. Note a frame’s quantity now and compare after sale/refund.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;store_code&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;example&quot;: &quot;HSR&quot;
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/transactions</code> — Transactions</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>List persisted bills and pending states without exposing another store.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;store_code&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;example&quot;: &quot;HSR&quot;
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/checkouts/{identifier}/detail</code> — 5. Compare prepared payload with the source order</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Reads local checkout/quote/refund_attempts and GETs Shopify orders/{id}.json when an order ID exists. Checkout duration is on the checkout row. Expand quote.order_payload for prepared source fields; completion additionally sends transactions. Expand order for the actual returned source record. order.refunds proves the Shopify refund exists; compare it with the local refund attempt and IDs.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;identifier&quot;,
+    &quot;in&quot;: &quot;path&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Identifier&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/CheckoutEvidenceSchema&quot;
+        }
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /api/checkouts/{identifier}/cancel</code> — Cancel</summary><p><b>Allowed roles:</b> admin, cashier, manager</p><p>Cancel an unpaid draft and retain its invoice number in the register.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;identifier&quot;,
+    &quot;in&quot;: &quot;path&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Identifier&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;required&quot;: true,
+  &quot;content&quot;: {
+    &quot;application/json&quot;: {
+      &quot;schema&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;additionalProperties&quot;: true,
+        &quot;title&quot;: &quot;Body&quot;
+      }
+    }
+  }
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/draft</code> — Resume the latest cashier draft</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>GET returns the current user&#x27;s resumable draft. PUT saves an append-only cart_snapshots version with draft_id, actor username/staff ID, created/saved timestamps and time since the prior save. The drafts table is only the latest resume pointer; history is available from /api/drafts/history.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>PUT /api/draft</code> — Resume the latest cashier draft</summary><p><b>Allowed roles:</b> admin, cashier, manager</p><p>GET returns the current user&#x27;s resumable draft. PUT saves an append-only cart_snapshots version with draft_id, actor username/staff ID, created/saved timestamps and time since the prior save. The drafts table is only the latest resume pointer; history is available from /api/drafts/history.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;content&quot;: {
+    &quot;application/json&quot;: {
+      &quot;schema&quot;: {
+        &quot;additionalProperties&quot;: true,
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;title&quot;: &quot;Body&quot;
+      }
+    }
+  },
+  &quot;required&quot;: true
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/draft/metadata</code> — Read the active draft ID and timestamps</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Returns lifecycle and actor metadata separately so the existing GET /api/draft cart payload contract remains unchanged.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/drafts/history</code> — Inspect all saved draft versions</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Reads SQLite cart_snapshots joined to checkouts and the returned Shopify order reference. The listing omits cart contents and phone numbers; full payloads remain in the local SQLite database and cart_tracking view.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;store_code&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: false,
+    &quot;schema&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;example&quot;: &quot;HSR&quot;
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /api/prescriptions</code> — Record a clinician-authored prescription</summary><p><b>Allowed roles:</b> admin, optometrist</p><p>Writes the Rx ID, normalized customer phone, authenticated username, staff ID, store and creation time into SQLite prescriptions. Local clinical additions are merged into customer prescription lookup.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;content&quot;: {
+    &quot;application/json&quot;: {
+      &quot;schema&quot;: {
+        &quot;$ref&quot;: &quot;#/components/schemas/PrescriptionInput&quot;
+      }
+    }
+  },
+  &quot;required&quot;: true
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/prescriptions/history</code> — Inspect prescription authorship</summary><p><b>Allowed roles:</b> admin, finance, optometrist</p><p>Returns Rx ID, customer ID, valid-through date, author, staff ID, store and timestamp without disclosing phone numbers.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;store_code&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: false,
+    &quot;schema&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;example&quot;: &quot;HSR&quot;
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /api/remakes/prepare</code> — Remake</summary><p><b>Allowed roles:</b> admin, manager</p><p>Prepare a linked lens-only remake and retain its cost owner and approver.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;content&quot;: {
+    &quot;application/json&quot;: {
+      &quot;schema&quot;: {
+        &quot;$ref&quot;: &quot;#/components/schemas/RemakeRequest&quot;
+      }
+    }
+  },
+  &quot;required&quot;: true
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/till</code> — Till</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Display expected cash from source transactions and local expenses.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;store_code&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;example&quot;: &quot;HSR&quot;
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /api/till/{action}</code> — Open, record paid-in or expense, and close a drawer</summary><p><b>Allowed roles:</b> admin, cashier, manager</p><p>Actions: open, paid-in, expense (paid-out), close. Amounts are integer paise. Paid-ins/expenses require a positive amount and a reason of at least three characters; they record the authenticated actor. Expected cash includes paid-ins without treating them as sales revenue. Close requires manager/admin and rejects unresolved financial operations.</p><p>Action-specific guard: open/expense allow cashier, manager, admin; close allows manager/admin. The union above does not grant cashier drawer close.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;action&quot;,
+    &quot;in&quot;: &quot;path&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Action&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;required&quot;: true,
+  &quot;content&quot;: {
+    &quot;application/json&quot;: {
+      &quot;schema&quot;: {
+        &quot;$ref&quot;: &quot;#/components/schemas/AmountRequest&quot;
+      }
+    }
+  }
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/reports</code> — 7. Read Shopify back and reconcile the result</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Reads source orders and nested refunds. Uses Asia/Kolkata order-day sales and refund-event-day collections, with channel attribution and payment-to-order deltas. Compare before and after refund. Not calculated merely from local checkout rows.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;day&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Day&quot;
+    }
+  },
+  {
+    &quot;name&quot;: &quot;store_code&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: false,
+    &quot;schema&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;example&quot;: &quot;HSR&quot;
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/reports/export</code> — Download the selected date as a CSV</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Shopify-derived bill count, gross, taxable, tax, discount, refunds and cash/card/UPI totals. basis=day_end matches the original order-date report, including all refunds on those orders. basis=daily matches the website&#x27;s refund-event-date collection summary. Store roles are restricted to their own store; central roles can download all seven stores and combined totals.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;day&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Day&quot;
+    }
+  },
+  {
+    &quot;name&quot;: &quot;store_code&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: false,
+    &quot;schema&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;example&quot;: &quot;HSR&quot;
+  },
+  {
+    &quot;name&quot;: &quot;basis&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: false,
+    &quot;schema&quot;: {
+      &quot;enum&quot;: [
+        &quot;day_end&quot;,
+        &quot;daily&quot;
+      ],
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;default&quot;: &quot;day_end&quot;,
+      &quot;title&quot;: &quot;Basis&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Downloadable Shopify-derived report.&quot;,
+    &quot;content&quot;: {
+      &quot;text/csv&quot;: {
+        &quot;schema&quot;: {
+          &quot;type&quot;: &quot;string&quot;
+        }
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/register</code> — Register</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Expose every invoice allocation including cancelled numbers.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;store_code&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;example&quot;: &quot;HSR&quot;
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/evidence</code> — Evidence</summary><p><b>Allowed roles:</b> admin, cashier, finance, manager, optometrist</p><p>Show acceptance criteria and measured mock latency without a production claim.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/audit</code> — Audit Log</summary><p><b>Allowed roles:</b> admin, finance</p><p>Restrict cross-store audit history to central finance and administrators.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>GET /api/outbox</code> — Outbox</summary><p><b>Allowed roles:</b> admin, finance</p><p>Distinguish reviewable queued messages from actual SMTP delivery.</p><h3>Parameters</h3><pre><code>[]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><details class="data-search"><summary><code>POST /api/reports/digest</code> — Digest</summary><p><b>Allowed roles:</b> admin, finance</p><p>Generate a repeat-safe founder report preview for a selected day.</p><h3>Parameters</h3><pre><code>[
+  {
+    &quot;name&quot;: &quot;day&quot;,
+    &quot;in&quot;: &quot;query&quot;,
+    &quot;required&quot;: true,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Day&quot;
+    }
+  }
+]</code></pre><h3>Request body</h3><pre><code>{
+  &quot;body&quot;: &quot;No request body declared&quot;
+}</code></pre><h3>Responses</h3><pre><code>{
+  &quot;200&quot;: {
+    &quot;description&quot;: &quot;Successful Response&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {}
+      }
+    }
+  },
+  &quot;422&quot;: {
+    &quot;description&quot;: &quot;Validation Error&quot;,
+    &quot;content&quot;: {
+      &quot;application/json&quot;: {
+        &quot;schema&quot;: {
+          &quot;$ref&quot;: &quot;#/components/schemas/HTTPValidationError&quot;
+        }
+      }
+    }
+  },
+  &quot;401&quot;: {
+    &quot;description&quot;: &quot;Sign in using POST /auth/login first.&quot;
+  },
+  &quot;403&quot;: {
+    &quot;description&quot;: &quot;Role/store access or CSRF check rejected the request.&quot;
+  }
+}</code></pre></details><p class="muted">Also available: /docs (Swagger), /openapi.json (machine-readable specification), /redoc (generated documentation route), /docs/oauth2-redirect and /static/* assets. These are framework/static routes rather than billing APIs; authorization follows the application’s public-path allowlist.</p></section><section id="models"><h2>9. All reusable internal schema definitions</h2><details class="data-search" id="model-AmountRequest"><summary>AmountRequest</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>store_code</td><td>string</td><td>Yes</td><td></td></tr><tr><td>amount_paise</td><td>integer</td><td>Yes</td><td></td></tr><tr><td>reason</td><td>string</td><td>No</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;store_code&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;amount_paise&quot;: {
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;maximum&quot;: 100000000.0,
+      &quot;minimum&quot;: 0.0,
+      &quot;title&quot;: &quot;Amount Paise&quot;
+    },
+    &quot;reason&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;maxLength&quot;: 500,
+      &quot;title&quot;: &quot;Reason&quot;,
+      &quot;default&quot;: &quot;&quot;
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;store_code&quot;,
+    &quot;amount_paise&quot;
+  ],
+  &quot;title&quot;: &quot;AmountRequest&quot;
+}</code></pre></details><details class="data-search" id="model-CheckoutEvidenceSchema"><summary>CheckoutEvidenceSchema</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>checkout</td><td>#/components/schemas/CheckoutStateSchema</td><td>Yes</td><td></td></tr><tr><td>quote</td><td>[{&quot;additionalProperties&quot;: true, &quot;type&quot;: &quot;object&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>Yes</td><td>Persisted quote. order_payload is the order body prepared for Shopify; lines show each wearer, HSN and tax. Completion adds transactions before sending.</td></tr><tr><td>order</td><td>[{&quot;additionalProperties&quot;: true, &quot;type&quot;: &quot;object&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>Yes</td><td>Live GET of the source Shopify mock order after completion, including line IDs, transactions and refunds; null before an order exists.</td></tr><tr><td>refunds</td><td>array</td><td>Yes</td><td>Local durable refund attempts, including prepared payload_json and source IDs.</td></tr><tr><td>invoice</td><td>[{&quot;additionalProperties&quot;: true, &quot;type&quot;: &quot;object&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td>Immutable issued invoice in SQLite; null for an unpaid draft.</td></tr><tr><td>refund_events</td><td>array</td><td>No</td><td>Append-only refund state changes, actor references and synchronization times.</td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;checkout&quot;: {
+      &quot;$ref&quot;: &quot;#/components/schemas/CheckoutStateSchema&quot;
+    },
+    &quot;quote&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;additionalProperties&quot;: true,
+          &quot;type&quot;: &quot;object&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;description&quot;: &quot;Persisted quote. order_payload is the order body prepared for Shopify; lines show each wearer, HSN and tax. Completion adds transactions before sending.&quot;,
+      &quot;title&quot;: &quot;Quote&quot;
+    },
+    &quot;order&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;additionalProperties&quot;: true,
+          &quot;type&quot;: &quot;object&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;description&quot;: &quot;Live GET of the source Shopify mock order after completion, including line IDs, transactions and refunds; null before an order exists.&quot;,
+      &quot;title&quot;: &quot;Order&quot;
+    },
+    &quot;refunds&quot;: {
+      &quot;description&quot;: &quot;Local durable refund attempts, including prepared payload_json and source IDs.&quot;,
+      &quot;items&quot;: {
+        &quot;additionalProperties&quot;: true,
+        &quot;type&quot;: &quot;object&quot;
+      },
+      &quot;title&quot;: &quot;Refunds&quot;,
+      &quot;type&quot;: &quot;array&quot;
+    },
+    &quot;invoice&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;additionalProperties&quot;: true,
+          &quot;type&quot;: &quot;object&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;default&quot;: null,
+      &quot;description&quot;: &quot;Immutable issued invoice in SQLite; null for an unpaid draft.&quot;,
+      &quot;title&quot;: &quot;Invoice&quot;
+    },
+    &quot;refund_events&quot;: {
+      &quot;description&quot;: &quot;Append-only refund state changes, actor references and synchronization times.&quot;,
+      &quot;items&quot;: {
+        &quot;additionalProperties&quot;: true,
+        &quot;type&quot;: &quot;object&quot;
+      },
+      &quot;title&quot;: &quot;Refund Events&quot;,
+      &quot;type&quot;: &quot;array&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;checkout&quot;,
+    &quot;quote&quot;,
+    &quot;order&quot;,
+    &quot;refunds&quot;
+  ],
+  &quot;title&quot;: &quot;CheckoutEvidenceSchema&quot;,
+  &quot;type&quot;: &quot;object&quot;
+}</code></pre></details><details class="data-search" id="model-CheckoutStateSchema"><summary>CheckoutStateSchema</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>checkout_id</td><td>string</td><td>Yes</td><td></td></tr><tr><td>store_code</td><td>string</td><td>Yes</td><td></td></tr><tr><td>customer_id</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>Yes</td><td></td></tr><tr><td>status</td><td>string</td><td>Yes</td><td></td></tr><tr><td>payment_ref</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>Yes</td><td></td></tr><tr><td>payment_charge_id</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>Yes</td><td></td></tr><tr><td>shopify_order_id</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>Yes</td><td></td></tr><tr><td>invoice_no</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>Yes</td><td></td></tr><tr><td>error_detail</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>Yes</td><td></td></tr><tr><td>created_at</td><td>string</td><td>Yes</td><td></td></tr><tr><td>updated_at</td><td>string</td><td>Yes</td><td></td></tr><tr><td>checkout_elapsed_ms</td><td>[{&quot;type&quot;: &quot;number&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td></td></tr><tr><td>timing_recorded_at</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;checkout_id&quot;: {
+      &quot;title&quot;: &quot;Checkout Id&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;store_code&quot;: {
+      &quot;title&quot;: &quot;Store Code&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;customer_id&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Customer Id&quot;
+    },
+    &quot;status&quot;: {
+      &quot;title&quot;: &quot;Status&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;payment_ref&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Payment Ref&quot;
+    },
+    &quot;payment_charge_id&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Payment Charge Id&quot;
+    },
+    &quot;shopify_order_id&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Shopify Order Id&quot;
+    },
+    &quot;invoice_no&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Invoice No&quot;
+    },
+    &quot;error_detail&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Error Detail&quot;
+    },
+    &quot;created_at&quot;: {
+      &quot;title&quot;: &quot;Created At&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;updated_at&quot;: {
+      &quot;title&quot;: &quot;Updated At&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;checkout_elapsed_ms&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;number&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;default&quot;: null,
+      &quot;title&quot;: &quot;Checkout Elapsed Ms&quot;
+    },
+    &quot;timing_recorded_at&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;default&quot;: null,
+      &quot;title&quot;: &quot;Timing Recorded At&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;checkout_id&quot;,
+    &quot;store_code&quot;,
+    &quot;customer_id&quot;,
+    &quot;status&quot;,
+    &quot;payment_ref&quot;,
+    &quot;payment_charge_id&quot;,
+    &quot;shopify_order_id&quot;,
+    &quot;invoice_no&quot;,
+    &quot;error_detail&quot;,
+    &quot;created_at&quot;,
+    &quot;updated_at&quot;
+  ],
+  &quot;title&quot;: &quot;CheckoutStateSchema&quot;,
+  &quot;type&quot;: &quot;object&quot;
+}</code></pre></details><details class="data-search" id="model-Credentials"><summary>Credentials</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>username</td><td>string</td><td>Yes</td><td></td></tr><tr><td>password</td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;username&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;maxLength&quot;: 80,
+      &quot;minLength&quot;: 1,
+      &quot;title&quot;: &quot;Username&quot;
+    },
+    &quot;password&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;maxLength&quot;: 200,
+      &quot;minLength&quot;: 1,
+      &quot;title&quot;: &quot;Password&quot;
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;username&quot;,
+    &quot;password&quot;
+  ],
+  &quot;title&quot;: &quot;Credentials&quot;
+}</code></pre></details><details class="data-search" id="model-CustomerLookupRequest"><summary>CustomerLookupRequest</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>phone</td><td>string</td><td>Yes</td><td>Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.</td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;phone&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Phone&quot;,
+      &quot;description&quot;: &quot;Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.&quot;,
+      &quot;examples&quot;: [
+        &quot;+919000000005&quot;
+      ]
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;phone&quot;
+  ],
+  &quot;title&quot;: &quot;CustomerLookupRequest&quot;
+}</code></pre></details><details class="data-search" id="model-CustomerLookupResponse"><summary>CustomerLookupResponse</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>customer</td><td>#/components/schemas/CustomerRecord</td><td>Yes</td><td></td></tr><tr><td>prescriptions</td><td>array</td><td>Yes</td><td>Source plus locally authored records. Not all are current; sale preparation chooses the latest unexpired record.</td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;customer&quot;: {
+      &quot;$ref&quot;: &quot;#/components/schemas/CustomerRecord&quot;
+    },
+    &quot;prescriptions&quot;: {
+      &quot;items&quot;: {
+        &quot;$ref&quot;: &quot;#/components/schemas/PrescriptionRecord&quot;
+      },
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;title&quot;: &quot;Prescriptions&quot;,
+      &quot;description&quot;: &quot;Source plus locally authored records. Not all are current; sale preparation chooses the latest unexpired record.&quot;
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;customer&quot;,
+    &quot;prescriptions&quot;
+  ],
+  &quot;title&quot;: &quot;CustomerLookupResponse&quot;
+}</code></pre></details><details class="data-search" id="model-CustomerRecord"><summary>CustomerRecord</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>id</td><td>integer</td><td>Yes</td><td>Source customer ID; use as stable identity, not as a phone number.</td></tr><tr><td>phone</td><td>string</td><td>Yes</td><td>Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.</td></tr><tr><td>first_name</td><td>string</td><td>Yes</td><td></td></tr><tr><td>last_name</td><td>string</td><td>Yes</td><td></td></tr><tr><td>tags</td><td>string</td><td>No</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;id&quot;: {
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;title&quot;: &quot;Id&quot;,
+      &quot;description&quot;: &quot;Source customer ID; use as stable identity, not as a phone number.&quot;
+    },
+    &quot;phone&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Phone&quot;,
+      &quot;description&quot;: &quot;Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.&quot;,
+      &quot;examples&quot;: [
+        &quot;+919000000005&quot;
+      ]
+    },
+    &quot;first_name&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;First Name&quot;
+    },
+    &quot;last_name&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Last Name&quot;
+    },
+    &quot;tags&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Tags&quot;,
+      &quot;default&quot;: &quot;&quot;
+    }
+  },
+  &quot;additionalProperties&quot;: true,
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;id&quot;,
+    &quot;phone&quot;,
+    &quot;first_name&quot;,
+    &quot;last_name&quot;
+  ],
+  &quot;title&quot;: &quot;CustomerRecord&quot;
+}</code></pre></details><details class="data-search" id="model-EyeInput"><summary>EyeInput</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>sph</td><td>[{&quot;type&quot;: &quot;number&quot;, &quot;multipleOf&quot;: 0.25, &quot;maximum&quot;: 30.0, &quot;minimum&quot;: -30.0}, {&quot;type&quot;: &quot;string&quot;}]</td><td>Yes</td><td>Sphere in diopters</td></tr><tr><td>cyl</td><td>[{&quot;type&quot;: &quot;number&quot;, &quot;multipleOf&quot;: 0.25, &quot;maximum&quot;: 12.0, &quot;minimum&quot;: -12.0}, {&quot;type&quot;: &quot;string&quot;}]</td><td>Yes</td><td>Cylinder in diopters</td></tr><tr><td>axis</td><td>integer</td><td>Yes</td><td></td></tr><tr><td>add</td><td>[{&quot;type&quot;: &quot;number&quot;, &quot;multipleOf&quot;: 0.25, &quot;maximum&quot;: 5.0, &quot;minimum&quot;: 0.0}, {&quot;type&quot;: &quot;string&quot;}]</td><td>Yes</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;sph&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;number&quot;,
+          &quot;multipleOf&quot;: 0.25,
+          &quot;maximum&quot;: 30.0,
+          &quot;minimum&quot;: -30.0
+        },
+        {
+          &quot;type&quot;: &quot;string&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Sph&quot;,
+      &quot;description&quot;: &quot;Sphere in diopters&quot;
+    },
+    &quot;cyl&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;number&quot;,
+          &quot;multipleOf&quot;: 0.25,
+          &quot;maximum&quot;: 12.0,
+          &quot;minimum&quot;: -12.0
+        },
+        {
+          &quot;type&quot;: &quot;string&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Cyl&quot;,
+      &quot;description&quot;: &quot;Cylinder in diopters&quot;
+    },
+    &quot;axis&quot;: {
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;multipleOf&quot;: 5.0,
+      &quot;maximum&quot;: 180.0,
+      &quot;minimum&quot;: 0.0,
+      &quot;title&quot;: &quot;Axis&quot;
+    },
+    &quot;add&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;number&quot;,
+          &quot;multipleOf&quot;: 0.25,
+          &quot;maximum&quot;: 5.0,
+          &quot;minimum&quot;: 0.0
+        },
+        {
+          &quot;type&quot;: &quot;string&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Add&quot;
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;sph&quot;,
+    &quot;cyl&quot;,
+    &quot;axis&quot;,
+    &quot;add&quot;
+  ],
+  &quot;title&quot;: &quot;EyeInput&quot;
+}</code></pre></details><details class="data-search" id="model-HTTPValidationError"><summary>HTTPValidationError</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>detail</td><td>array</td><td>No</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;detail&quot;: {
+      &quot;items&quot;: {
+        &quot;$ref&quot;: &quot;#/components/schemas/ValidationError&quot;
+      },
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;title&quot;: &quot;Detail&quot;
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;title&quot;: &quot;HTTPValidationError&quot;
+}</code></pre></details><details class="data-search" id="model-OfferDecisionSchema"><summary>OfferDecisionSchema</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>offer_id</td><td>string</td><td>Yes</td><td></td></tr><tr><td>applied</td><td>boolean</td><td>Yes</td><td></td></tr><tr><td>amount_paise</td><td>integer</td><td>Yes</td><td></td></tr><tr><td>reason</td><td>string</td><td>Yes</td><td></td></tr><tr><td>allocations_paise</td><td>array</td><td>Yes</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;offer_id&quot;: {
+      &quot;title&quot;: &quot;Offer Id&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;applied&quot;: {
+      &quot;title&quot;: &quot;Applied&quot;,
+      &quot;type&quot;: &quot;boolean&quot;
+    },
+    &quot;amount_paise&quot;: {
+      &quot;title&quot;: &quot;Amount Paise&quot;,
+      &quot;type&quot;: &quot;integer&quot;
+    },
+    &quot;reason&quot;: {
+      &quot;title&quot;: &quot;Reason&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;allocations_paise&quot;: {
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;integer&quot;
+      },
+      &quot;title&quot;: &quot;Allocations Paise&quot;,
+      &quot;type&quot;: &quot;array&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;offer_id&quot;,
+    &quot;applied&quot;,
+    &quot;amount_paise&quot;,
+    &quot;reason&quot;,
+    &quot;allocations_paise&quot;
+  ],
+  &quot;title&quot;: &quot;OfferDecisionSchema&quot;,
+  &quot;type&quot;: &quot;object&quot;
+}</code></pre></details><details class="data-search" id="model-PrepareRequest"><summary>PrepareRequest</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>phone</td><td>string</td><td>Yes</td><td>Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.</td></tr><tr><td>store_code</td><td>string</td><td>Yes</td><td></td></tr><tr><td>staff_id</td><td>string</td><td>Yes</td><td></td></tr><tr><td>variant_ids</td><td>array</td><td>Yes</td><td></td></tr><tr><td>payment_method</td><td>string</td><td>No</td><td></td></tr><tr><td>channel</td><td>string</td><td>No</td><td></td></tr><tr><td>checkout_id</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td></td></tr><tr><td>reason_code</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td></td></tr><tr><td>override_bps</td><td>[{&quot;type&quot;: &quot;integer&quot;, &quot;maximum&quot;: 1000.0, &quot;minimum&quot;: 0.0}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td>Manager-entered discount in basis points (500 = 5%). Applies exactly as entered and exclusively of other offers; requires manager permission and a reason.</td></tr><tr><td>selected_offer_id</td><td>[{&quot;type&quot;: &quot;string&quot;, &quot;maxLength&quot;: 80, &quot;minLength&quot;: 1}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td>Optional offer_id from offers.json. Only this offer is applied after server validation. Omit to apply no coupon discount.</td></tr><tr><td>members</td><td>[{&quot;items&quot;: {&quot;$ref&quot;: &quot;#/components/schemas/WearerSelection&quot;}, &quot;type&quot;: &quot;array&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;phone&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Phone&quot;,
+      &quot;description&quot;: &quot;Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.&quot;,
+      &quot;examples&quot;: [
+        &quot;+919000000005&quot;
+      ]
+    },
+    &quot;store_code&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Store Code&quot;
+    },
+    &quot;staff_id&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Staff Id&quot;
+    },
+    &quot;variant_ids&quot;: {
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;integer&quot;
+      },
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;title&quot;: &quot;Variant Ids&quot;
+    },
+    &quot;payment_method&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Payment Method&quot;,
+      &quot;default&quot;: &quot;upi&quot;
+    },
+    &quot;channel&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Channel&quot;,
+      &quot;default&quot;: &quot;walk_in&quot;
+    },
+    &quot;checkout_id&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Checkout Id&quot;
+    },
+    &quot;reason_code&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Reason Code&quot;
+    },
+    &quot;override_bps&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;maximum&quot;: 1000.0,
+          &quot;minimum&quot;: 0.0
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Override Bps&quot;,
+      &quot;description&quot;: &quot;Manager-entered discount in basis points (500 = 5%). Applies exactly as entered and exclusively of other offers; requires manager permission and a reason.&quot;
+    },
+    &quot;selected_offer_id&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;maxLength&quot;: 80,
+          &quot;minLength&quot;: 1
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Selected Offer Id&quot;,
+      &quot;description&quot;: &quot;Optional offer_id from offers.json. Only this offer is applied after server validation. Omit to apply no coupon discount.&quot;
+    },
+    &quot;members&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;items&quot;: {
+            &quot;$ref&quot;: &quot;#/components/schemas/WearerSelection&quot;
+          },
+          &quot;type&quot;: &quot;array&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Members&quot;
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;phone&quot;,
+    &quot;store_code&quot;,
+    &quot;staff_id&quot;,
+    &quot;variant_ids&quot;
+  ],
+  &quot;title&quot;: &quot;PrepareRequest&quot;
+}</code></pre></details><details class="data-search" id="model-PrescriptionInput"><summary>PrescriptionInput</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>phone</td><td>string</td><td>Yes</td><td>Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.</td></tr><tr><td>store_code</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td>Store where the clinician entered this prescription; the frontend supplies the selected store.</td></tr><tr><td>od</td><td>#/components/schemas/EyeInput</td><td>Yes</td><td></td></tr><tr><td>os</td><td>#/components/schemas/EyeInput</td><td>Yes</td><td></td></tr><tr><td>valid_until</td><td>string</td><td>Yes</td><td>Today through two years ahead; validated by the clinical endpoint.</td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;phone&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Phone&quot;,
+      &quot;description&quot;: &quot;Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.&quot;,
+      &quot;examples&quot;: [
+        &quot;+919000000005&quot;
+      ]
+    },
+    &quot;store_code&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Store Code&quot;,
+      &quot;description&quot;: &quot;Store where the clinician entered this prescription; the frontend supplies the selected store.&quot;
+    },
+    &quot;od&quot;: {
+      &quot;$ref&quot;: &quot;#/components/schemas/EyeInput&quot;
+    },
+    &quot;os&quot;: {
+      &quot;$ref&quot;: &quot;#/components/schemas/EyeInput&quot;
+    },
+    &quot;valid_until&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;date&quot;,
+      &quot;title&quot;: &quot;Valid Until&quot;,
+      &quot;description&quot;: &quot;Today through two years ahead; validated by the clinical endpoint.&quot;
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;phone&quot;,
+    &quot;od&quot;,
+    &quot;os&quot;,
+    &quot;valid_until&quot;
+  ],
+  &quot;title&quot;: &quot;PrescriptionInput&quot;
+}</code></pre></details><details class="data-search" id="model-PrescriptionRecord"><summary>PrescriptionRecord</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>rx_id</td><td>string</td><td>Yes</td><td></td></tr><tr><td>customer_id</td><td>integer</td><td>Yes</td><td></td></tr><tr><td>phone</td><td>string</td><td>Yes</td><td>Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.</td></tr><tr><td>date</td><td>string</td><td>Yes</td><td>Issued date or timestamp; used when selecting the latest valid prescription.</td></tr><tr><td>valid_until</td><td>string</td><td>Yes</td><td></td></tr><tr><td>od</td><td>#/components/schemas/SourceEyeRecord</td><td>Yes</td><td>Right eye</td></tr><tr><td>os</td><td>#/components/schemas/SourceEyeRecord</td><td>Yes</td><td>Left eye</td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;rx_id&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Rx Id&quot;
+    },
+    &quot;customer_id&quot;: {
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;title&quot;: &quot;Customer Id&quot;
+    },
+    &quot;phone&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Phone&quot;,
+      &quot;description&quot;: &quot;Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.&quot;,
+      &quot;examples&quot;: [
+        &quot;+919000000005&quot;
+      ]
+    },
+    &quot;date&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Date&quot;,
+      &quot;description&quot;: &quot;Issued date or timestamp; used when selecting the latest valid prescription.&quot;
+    },
+    &quot;valid_until&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Valid Until&quot;
+    },
+    &quot;od&quot;: {
+      &quot;$ref&quot;: &quot;#/components/schemas/SourceEyeRecord&quot;,
+      &quot;description&quot;: &quot;Right eye&quot;
+    },
+    &quot;os&quot;: {
+      &quot;$ref&quot;: &quot;#/components/schemas/SourceEyeRecord&quot;,
+      &quot;description&quot;: &quot;Left eye&quot;
+    }
+  },
+  &quot;additionalProperties&quot;: true,
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;rx_id&quot;,
+    &quot;customer_id&quot;,
+    &quot;phone&quot;,
+    &quot;date&quot;,
+    &quot;valid_until&quot;,
+    &quot;od&quot;,
+    &quot;os&quot;
+  ],
+  &quot;title&quot;: &quot;PrescriptionRecord&quot;
+}</code></pre></details><details class="data-search" id="model-QuoteResult"><summary>QuoteResult</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>checkout_id</td><td>string</td><td>Yes</td><td>Copy this into the complete and detail endpoints.</td></tr><tr><td>invoice_no</td><td>string</td><td>Yes</td><td>Reserved local per-store invoice number; not a Shopify order number.</td></tr><tr><td>total_paise</td><td>integer</td><td>Yes</td><td>Exact amount to confirm. Divide by 100 for INR.</td></tr><tr><td>tax_paise</td><td>integer</td><td>Yes</td><td>GST already included in total_paise.</td></tr><tr><td>offers</td><td>array</td><td>Yes</td><td></td></tr><tr><td>status</td><td>string</td><td>Yes</td><td>draft: no payment or source order has been created.</td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;checkout_id&quot;: {
+      &quot;description&quot;: &quot;Copy this into the complete and detail endpoints.&quot;,
+      &quot;title&quot;: &quot;Checkout Id&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;invoice_no&quot;: {
+      &quot;description&quot;: &quot;Reserved local per-store invoice number; not a Shopify order number.&quot;,
+      &quot;title&quot;: &quot;Invoice No&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;total_paise&quot;: {
+      &quot;description&quot;: &quot;Exact amount to confirm. Divide by 100 for INR.&quot;,
+      &quot;title&quot;: &quot;Total Paise&quot;,
+      &quot;type&quot;: &quot;integer&quot;
+    },
+    &quot;tax_paise&quot;: {
+      &quot;description&quot;: &quot;GST already included in total_paise.&quot;,
+      &quot;title&quot;: &quot;Tax Paise&quot;,
+      &quot;type&quot;: &quot;integer&quot;
+    },
+    &quot;offers&quot;: {
+      &quot;items&quot;: {
+        &quot;$ref&quot;: &quot;#/components/schemas/OfferDecisionSchema&quot;
+      },
+      &quot;title&quot;: &quot;Offers&quot;,
+      &quot;type&quot;: &quot;array&quot;
+    },
+    &quot;status&quot;: {
+      &quot;description&quot;: &quot;draft: no payment or source order has been created.&quot;,
+      &quot;title&quot;: &quot;Status&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;checkout_id&quot;,
+    &quot;invoice_no&quot;,
+    &quot;total_paise&quot;,
+    &quot;tax_paise&quot;,
+    &quot;offers&quot;,
+    &quot;status&quot;
+  ],
+  &quot;title&quot;: &quot;QuoteResult&quot;,
+  &quot;type&quot;: &quot;object&quot;
+}</code></pre></details><details class="data-search" id="model-RefundPrepareRequest"><summary>RefundPrepareRequest</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>checkout_id</td><td>string</td><td>Yes</td><td></td></tr><tr><td>reason</td><td>string</td><td>Yes</td><td></td></tr><tr><td>refund_id</td><td>[{&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;checkout_id&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Checkout Id&quot;
+    },
+    &quot;reason&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Reason&quot;
+    },
+    &quot;refund_id&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Refund Id&quot;
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;checkout_id&quot;,
+    &quot;reason&quot;
+  ],
+  &quot;title&quot;: &quot;RefundPrepareRequest&quot;
+}</code></pre></details><details class="data-search" id="model-RefundPreviewSchema"><summary>RefundPreviewSchema</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>refund_id</td><td>string</td><td>Yes</td><td></td></tr><tr><td>checkout_id</td><td>string</td><td>Yes</td><td></td></tr><tr><td>status</td><td>string</td><td>Yes</td><td></td></tr><tr><td>amount_paise</td><td>integer</td><td>Yes</td><td></td></tr><tr><td>tax_reversed_paise</td><td>integer</td><td>Yes</td><td></td></tr><tr><td>frame_restocked_on_shopify_success</td><td>boolean</td><td>Yes</td><td>Intended behavior on completion; prepare has NOT restocked anything.</td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;refund_id&quot;: {
+      &quot;title&quot;: &quot;Refund Id&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;checkout_id&quot;: {
+      &quot;title&quot;: &quot;Checkout Id&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;status&quot;: {
+      &quot;title&quot;: &quot;Status&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;amount_paise&quot;: {
+      &quot;title&quot;: &quot;Amount Paise&quot;,
+      &quot;type&quot;: &quot;integer&quot;
+    },
+    &quot;tax_reversed_paise&quot;: {
+      &quot;title&quot;: &quot;Tax Reversed Paise&quot;,
+      &quot;type&quot;: &quot;integer&quot;
+    },
+    &quot;frame_restocked_on_shopify_success&quot;: {
+      &quot;description&quot;: &quot;Intended behavior on completion; prepare has NOT restocked anything.&quot;,
+      &quot;title&quot;: &quot;Frame Restocked On Shopify Success&quot;,
+      &quot;type&quot;: &quot;boolean&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;refund_id&quot;,
+    &quot;checkout_id&quot;,
+    &quot;status&quot;,
+    &quot;amount_paise&quot;,
+    &quot;tax_reversed_paise&quot;,
+    &quot;frame_restocked_on_shopify_success&quot;
+  ],
+  &quot;title&quot;: &quot;RefundPreviewSchema&quot;,
+  &quot;type&quot;: &quot;object&quot;
+}</code></pre></details><details class="data-search" id="model-RemakeRequest"><summary>RemakeRequest</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>checkout_id</td><td>string</td><td>Yes</td><td></td></tr><tr><td>lens_variant_id</td><td>integer</td><td>Yes</td><td></td></tr><tr><td>wearer_phone</td><td>string</td><td>Yes</td><td>Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.</td></tr><tr><td>reason</td><td>string</td><td>Yes</td><td></td></tr><tr><td>cost_owner</td><td>string</td><td>Yes</td><td></td></tr><tr><td>lab_cost_paise</td><td>integer</td><td>Yes</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;checkout_id&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Checkout Id&quot;
+    },
+    &quot;lens_variant_id&quot;: {
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;title&quot;: &quot;Lens Variant Id&quot;
+    },
+    &quot;wearer_phone&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Wearer Phone&quot;,
+      &quot;description&quot;: &quot;Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.&quot;,
+      &quot;examples&quot;: [
+        &quot;+919000000005&quot;
+      ]
+    },
+    &quot;reason&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;maxLength&quot;: 500,
+      &quot;minLength&quot;: 3,
+      &quot;title&quot;: &quot;Reason&quot;
+    },
+    &quot;cost_owner&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Cost Owner&quot;
+    },
+    &quot;lab_cost_paise&quot;: {
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;maximum&quot;: 100000000.0,
+      &quot;minimum&quot;: 0.0,
+      &quot;title&quot;: &quot;Lab Cost Paise&quot;
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;checkout_id&quot;,
+    &quot;lens_variant_id&quot;,
+    &quot;wearer_phone&quot;,
+    &quot;reason&quot;,
+    &quot;cost_owner&quot;,
+    &quot;lab_cost_paise&quot;
+  ],
+  &quot;title&quot;: &quot;RemakeRequest&quot;
+}</code></pre></details><details class="data-search" id="model-SourceEyeRecord"><summary>SourceEyeRecord</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>sph</td><td>[{&quot;type&quot;: &quot;number&quot;}, {&quot;type&quot;: &quot;string&quot;}]</td><td>Yes</td><td></td></tr><tr><td>cyl</td><td>[{&quot;type&quot;: &quot;number&quot;}, {&quot;type&quot;: &quot;string&quot;}]</td><td>Yes</td><td></td></tr><tr><td>axis</td><td>[{&quot;type&quot;: &quot;integer&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td></td></tr><tr><td>add</td><td>[{&quot;type&quot;: &quot;number&quot;}, {&quot;type&quot;: &quot;string&quot;}, {&quot;type&quot;: &quot;null&quot;}]</td><td>No</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;sph&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;number&quot;
+        },
+        {
+          &quot;type&quot;: &quot;string&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Sph&quot;
+    },
+    &quot;cyl&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;number&quot;
+        },
+        {
+          &quot;type&quot;: &quot;string&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Cyl&quot;
+    },
+    &quot;axis&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;integer&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Axis&quot;
+    },
+    &quot;add&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;number&quot;
+        },
+        {
+          &quot;type&quot;: &quot;string&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ],
+      &quot;title&quot;: &quot;Add&quot;
+    }
+  },
+  &quot;additionalProperties&quot;: true,
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;sph&quot;,
+    &quot;cyl&quot;
+  ],
+  &quot;title&quot;: &quot;SourceEyeRecord&quot;
+}</code></pre></details><details class="data-search" id="model-ValidationError"><summary>ValidationError</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>loc</td><td>array</td><td>Yes</td><td></td></tr><tr><td>msg</td><td>string</td><td>Yes</td><td></td></tr><tr><td>type</td><td>string</td><td>Yes</td><td></td></tr><tr><td>input</td><td>{}</td><td>No</td><td></td></tr><tr><td>ctx</td><td>object</td><td>No</td><td></td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;loc&quot;: {
+      &quot;items&quot;: {
+        &quot;anyOf&quot;: [
+          {
+            &quot;type&quot;: &quot;string&quot;
+          },
+          {
+            &quot;type&quot;: &quot;integer&quot;
+          }
+        ]
+      },
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;title&quot;: &quot;Location&quot;
+    },
+    &quot;msg&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Message&quot;
+    },
+    &quot;type&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Error Type&quot;
+    },
+    &quot;input&quot;: {
+      &quot;title&quot;: &quot;Input&quot;
+    },
+    &quot;ctx&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;title&quot;: &quot;Context&quot;
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;loc&quot;,
+    &quot;msg&quot;,
+    &quot;type&quot;
+  ],
+  &quot;title&quot;: &quot;ValidationError&quot;
+}</code></pre></details><details class="data-search" id="model-WearerSelection"><summary>WearerSelection</summary><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type/reference</th><th>Required</th><th>Meaning</th></tr></thead><tbody><tr><td>phone</td><td>string</td><td>Yes</td><td>Existing wearer phone; their own latest complete valid prescription is used.</td></tr><tr><td>variant_ids</td><td>array</td><td>No</td><td>Selected frame and lens variant IDs. Every optical frame needs exactly one paired lens. Sunglasses can be ready-to-wear or paired with one prescription lens.</td></tr><tr><td>lens_only_variant_ids</td><td>array</td><td>No</td><td>Lens pairs sold without frames. Each item is one lens-pair variant and is validated against this wearer&#x27;s current prescription.</td></tr><tr><td>frame_only_variant_ids</td><td>array</td><td>No</td><td>Explicit frame-only purchases. These frames have no lens or prescription attached; move a frame into variant_ids with its lens to sell a complete prescription pair.</td></tr></tbody></table></div><pre><code>{
+  &quot;properties&quot;: {
+    &quot;phone&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;Phone&quot;,
+      &quot;description&quot;: &quot;Existing wearer phone; their own latest complete valid prescription is used.&quot;,
+      &quot;examples&quot;: [
+        &quot;+919000000004&quot;
+      ]
+    },
+    &quot;variant_ids&quot;: {
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;integer&quot;
+      },
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;maxItems&quot;: 30,
+      &quot;title&quot;: &quot;Variant Ids&quot;,
+      &quot;description&quot;: &quot;Selected frame and lens variant IDs. Every optical frame needs exactly one paired lens. Sunglasses can be ready-to-wear or paired with one prescription lens.&quot;,
+      &quot;examples&quot;: [
+        [
+          91000003,
+          91000083
+        ]
+      ]
+    },
+    &quot;lens_only_variant_ids&quot;: {
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;integer&quot;
+      },
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;maxItems&quot;: 30,
+      &quot;title&quot;: &quot;Lens Only Variant Ids&quot;,
+      &quot;description&quot;: &quot;Lens pairs sold without frames. Each item is one lens-pair variant and is validated against this wearer&#x27;s current prescription.&quot;,
+      &quot;examples&quot;: [
+        [
+          91000083
+        ]
+      ]
+    },
+    &quot;frame_only_variant_ids&quot;: {
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;integer&quot;
+      },
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;maxItems&quot;: 30,
+      &quot;title&quot;: &quot;Frame Only Variant Ids&quot;,
+      &quot;description&quot;: &quot;Explicit frame-only purchases. These frames have no lens or prescription attached; move a frame into variant_ids with its lens to sell a complete prescription pair.&quot;,
+      &quot;examples&quot;: [
+        [
+          91000003
+        ]
+      ]
+    }
+  },
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [
+    &quot;phone&quot;
+  ],
+  &quot;title&quot;: &quot;WearerSelection&quot;
+}</code></pre></details></section><section id="database"><h2>10. Internal storage and relationships</h2>
+    <p>SQLite stores operational state, not a replacement copy of Shopify’s whole customer/product ledger. The SQL below is extracted from the current table definitions. Additional indexes and migrations are in the source files; the tills table also receives <code>baseline_json</code> through an additive migration.</p>
+    <div class="table-wrap"><table><thead><tr><th>Table/group</th><th>Relationship and meaning</th></tr></thead><tbody><tr><td>users → sessions</td><td>Session username joins to provisioned account; token is stored hashed, with expiry and CSRF token. No phone is needed for staff login.</td></tr><tr><td>prescriptions</td><td>rx_id identifies record; phone is canonical lookup key; payload JSON also contains customer_id and both eyes. No local customer table or enforced customer foreign key exists.</td></tr><tr><td>drafts</td><td>One JSON cart per username; members contain canonical phone and selected variants. Not a source customer record.</td></tr><tr><td>checkouts → checkout_quotes</td><td>checkout_id joins operation state to saved pricing/payload; customer_id links logically to the source customer.</td></tr><tr><td>invoice_series → invoice_allocations</td><td>Store counter and checkout allocation preserve invoice numbers across reserved/issued/cancelled states.</td></tr><tr><td>refunds</td><td>Links to checkout and source order; preserves amount, payload, state and external refund references.</td></tr><tr><td>tills → expenses</td><td>Store drawer sessions, baseline source transaction IDs, counted/expected cash and reasoned expenses.</td></tr><tr><td>audit / timings / outbox</td><td>Who acted and result metadata; completion measurements; saved notification body and status.</td></tr></tbody></table></div><details class="data-search"><summary>checkouts</summary><pre><code>CREATE TABLE IF NOT EXISTS checkouts (
+                  checkout_id TEXT PRIMARY KEY,
+                  store_code TEXT NOT NULL,
+                  customer_id TEXT,
+                  status TEXT NOT NULL,
+                  payment_ref TEXT UNIQUE,
+                  payment_charge_id TEXT,
+                  shopify_order_id TEXT UNIQUE,
+                  invoice_no TEXT UNIQUE,
+                  error_detail TEXT,
+                  created_at TEXT NOT NULL,
+                  updated_at TEXT NOT NULL,
+                  checkout_elapsed_ms REAL,
+                  timing_recorded_at TEXT
+                );</code></pre></details><details class="data-search"><summary>checkout_quotes</summary><pre><code>CREATE TABLE IF NOT EXISTS checkout_quotes (
+                  checkout_id TEXT PRIMARY KEY REFERENCES checkouts(checkout_id),
+                  quote_json TEXT NOT NULL
+                );</code></pre></details><details class="data-search"><summary>invoice_series</summary><pre><code>CREATE TABLE IF NOT EXISTS invoice_series (
+                  store_code TEXT PRIMARY KEY,
+                  prefix TEXT NOT NULL,
+                  next_number INTEGER NOT NULL CHECK (next_number &gt; 0)
+                );</code></pre></details><details class="data-search"><summary>invoice_allocations</summary><pre><code>CREATE TABLE IF NOT EXISTS invoice_allocations (
+                  invoice_no TEXT PRIMARY KEY,
+                  checkout_id TEXT NOT NULL UNIQUE REFERENCES checkouts(checkout_id),
+                  store_code TEXT NOT NULL,
+                  serial_number INTEGER NOT NULL,
+                  allocated_at TEXT NOT NULL,
+                  status TEXT NOT NULL DEFAULT &#x27;reserved&#x27;,
+                  UNIQUE(store_code, serial_number)
+                );</code></pre></details><details class="data-search"><summary>refund_attempts</summary><pre><code>CREATE TABLE IF NOT EXISTS refund_attempts (
+                  refund_id TEXT PRIMARY KEY,
+                  checkout_id TEXT NOT NULL UNIQUE REFERENCES checkouts(checkout_id),
+                  shopify_order_id TEXT NOT NULL,
+                  amount_paise INTEGER NOT NULL,
+                  payload_json TEXT NOT NULL,
+                  status TEXT NOT NULL,
+                  terminal_refund_id TEXT,
+                  shopify_refund_id TEXT,
+                  error_detail TEXT,
+                  created_at TEXT NOT NULL,
+                  updated_at TEXT NOT NULL
+                );</code></pre></details><details class="data-search"><summary>order_submissions</summary><pre><code>CREATE TABLE IF NOT EXISTS order_submissions(
+                  checkout_id TEXT PRIMARY KEY REFERENCES checkouts(checkout_id),
+                  payload_json TEXT NOT NULL, created_at TEXT NOT NULL);</code></pre></details><details class="data-search"><summary>invoices</summary><pre><code>CREATE TABLE IF NOT EXISTS invoices(
+                  invoice_no TEXT PRIMARY KEY, checkout_id TEXT UNIQUE NOT NULL REFERENCES checkouts(checkout_id),
+                  store_code TEXT NOT NULL, shopify_order_id TEXT UNIQUE NOT NULL, issued_at TEXT NOT NULL,
+                  payment_method TEXT NOT NULL, gross_paise INTEGER NOT NULL, discount_paise INTEGER NOT NULL,
+                  taxable_paise INTEGER NOT NULL, tax_paise INTEGER NOT NULL, total_paise INTEGER NOT NULL,
+                  payment_charge_id TEXT, payload_json TEXT NOT NULL, order_submission_json TEXT);</code></pre></details><details class="data-search"><summary>refund_events</summary><pre><code>CREATE TABLE IF NOT EXISTS refund_events(
+                  event_id INTEGER PRIMARY KEY AUTOINCREMENT, refund_id TEXT NOT NULL,
+                  previous_status TEXT, status TEXT NOT NULL, at TEXT NOT NULL, detail_json TEXT NOT NULL);</code></pre></details><details class="data-search"><summary>users</summary><pre><code>CREATE TABLE IF NOT EXISTS users(username TEXT PRIMARY KEY, password_hash TEXT NOT NULL,
+          role TEXT NOT NULL, store_code TEXT NOT NULL, staff_id TEXT NOT NULL, display_name TEXT NOT NULL);</code></pre></details><details class="data-search"><summary>sessions</summary><pre><code>CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, username TEXT NOT NULL,
+          csrf TEXT NOT NULL, expires REAL NOT NULL);</code></pre></details><details class="data-search"><summary>login_attempts</summary><pre><code>CREATE TABLE IF NOT EXISTS login_attempts(username TEXT PRIMARY KEY, attempts INTEGER NOT NULL, since REAL NOT NULL);</code></pre></details><details class="data-search"><summary>audit</summary><pre><code>CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL,
+          actor TEXT NOT NULL, action TEXT NOT NULL, reference TEXT NOT NULL, detail TEXT NOT NULL);</code></pre></details><details class="data-search"><summary>drafts</summary><pre><code>CREATE TABLE IF NOT EXISTS drafts(username TEXT PRIMARY KEY, payload TEXT NOT NULL,
+          draft_id TEXT, created_by TEXT, created_by_staff_id TEXT, created_at TEXT, updated_at TEXT);</code></pre></details><details class="data-search"><summary>cart_snapshots</summary><pre><code>CREATE TABLE IF NOT EXISTS cart_snapshots(
+          snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT NOT NULL, store_code TEXT NOT NULL, status TEXT NOT NULL,
+          checkout_id TEXT, payload TEXT NOT NULL, saved_at TEXT NOT NULL,
+          draft_id TEXT, created_by TEXT, created_by_staff_id TEXT, created_at TEXT, elapsed_ms REAL);</code></pre></details><details class="data-search"><summary>prescriptions</summary><pre><code>CREATE TABLE IF NOT EXISTS prescriptions(rx_id TEXT PRIMARY KEY, phone TEXT NOT NULL, payload TEXT NOT NULL,
+          created_by TEXT, created_by_staff_id TEXT, created_at TEXT, store_code TEXT);</code></pre></details><details class="data-search"><summary>tills</summary><pre><code>CREATE TABLE IF NOT EXISTS tills(id TEXT PRIMARY KEY, store_code TEXT NOT NULL, opened_at TEXT NOT NULL,
+          closed_at TEXT, opening_paise INTEGER NOT NULL, counted_paise INTEGER, expected_paise INTEGER, variance_paise INTEGER);</code></pre></details><details class="data-search"><summary>expenses</summary><pre><code>CREATE TABLE IF NOT EXISTS expenses(id TEXT PRIMARY KEY, till_id TEXT NOT NULL, amount_paise INTEGER NOT NULL,
+          reason TEXT NOT NULL, actor TEXT NOT NULL, at TEXT NOT NULL);</code></pre></details><details class="data-search"><summary>paid_ins</summary><pre><code>CREATE TABLE IF NOT EXISTS paid_ins(id TEXT PRIMARY KEY, till_id TEXT NOT NULL, amount_paise INTEGER NOT NULL CHECK(amount_paise &gt; 0),
+          reason TEXT NOT NULL, actor TEXT NOT NULL, at TEXT NOT NULL);</code></pre></details><details class="data-search"><summary>outbox</summary><pre><code>CREATE TABLE IF NOT EXISTS outbox(id TEXT PRIMARY KEY, created_at TEXT NOT NULL, subject TEXT NOT NULL,
+          body TEXT NOT NULL, status TEXT NOT NULL DEFAULT &#x27;queued&#x27;, error TEXT);</code></pre></details>
+    <p><strong>Retention and data protection:</strong> current demo storage includes plaintext phone/clinical data in authorized payloads, browser drafts and the synthetic snapshot. Encryption at rest, retention/deletion policy, consent, staff access review and production-safe export rules are not implemented by moving lookup to POST.</p>
+    </section><section id="verification"><h2>11. Verify and explain the change</h2>
+    <ol><li>Restart the runner so the backend, wrapper and Swagger schema load the new contract. Do not recreate the virtual environment.</li><li>Sign in, call <code>POST /api/customers</code> with <code>{"phone":"9000000005"}</code>. Confirm normalized phone and source customer ID.</li><li>Repeat with +91, 91 and leading-0 formats. The same customer and Rx list should return.</li><li>As optometrist, add a valid prescription using one format. As cashier, look up using another and prepare a lens bill. Verify chosen rx_id and wearer phone in saved quote/source payload.</li><li>Inspect browser Network: lookup URL contains only /api/customers; phone is in Request Payload. Private source calls use /eluno/* body routes.</li><li>Invalid/foreign number → 422; valid but unknown customer → 404; old GET customer route → 405; no session → 401; POST without CSRF → 403.</li><li>Check access logs contain paths without phone-bearing queries. Do not assume proxy/APM/body logging is redacted without its own verification.</li></ol>
+    <h3>Run the application and targeted regression tests</h3>
+    <pre><code>.\.venv\Scripts\python.exe run_demo.py --port 8001 --mock-port 8788
+.\.venv\Scripts\python.exe -m pytest tests/test_phone_privacy.py tests/test_browser_roles.py -q</code></pre>
+    <p>Regression cases cover canonical formats, invalid numbers, body-only wrapper requests, access-log redaction, same-customer clinical linkage and quote attachment. The wider role/endpoint suite protects the changed POST lookup and CSRF rules. See docs/PHONE_LOOKUP_CHANGE.md for the final recorded run result.</p>
+    <div class="say"><span>Founder / tech-lead explanation</span><p>“We use a customer ID to identify the source record and a consistently formatted phone to find it. Prescriptions belong to that customer, and a specific Rx ID is attached to each sold lens. We moved phone lookup into request bodies; our demo wrapper supports the same privacy boundary without modifying the supplied exercise service.”</p></div>
+    </section><footer>Self-contained HTML. OpenAPI export: docs/openapi-contract.json. Source schemas: app/customer_schemas.py, app/phone.py, app/main.py, app/web.py and app/api_documentation.py. Generated by scripts/build_schema_guide.py.</footer></main><script>
+    /** Search actual API/schema entries without changing the documented contract. */
+    function filterSchemas(){const term=document.querySelector('#schema-search').value.toLowerCase();let count=0;document.querySelectorAll('.data-search').forEach(item=>{item.hidden=!item.textContent.toLowerCase().includes(term);if(!item.hidden)count++;});document.querySelector('#search-count').textContent=count+' API, model and table entries match.';}
+    /** Expand contracts and clear filters for complete printing. */
+    function preparePrint(){document.querySelector('#schema-search').value='';filterSchemas();document.querySelectorAll('details').forEach(item=>item.open=true);}
+    document.querySelector('#schema-search').addEventListener('input',filterSchemas);
+    document.querySelector('#expand').addEventListener('click',()=>document.querySelectorAll('.data-search:not([hidden])').forEach(item=>item.open=true));
+    document.querySelector('#print').addEventListener('click',()=>{preparePrint();window.print();});window.addEventListener('beforeprint',preparePrint);filterSchemas();
+    </script></body></html>

@@ -15,6 +15,7 @@ from test_stage5 import backend
 def demo(tmp_path, monkeypatch, backend):
     """Isolate API state and provision real role-bound credentials for each test."""
     monkeypatch.setenv("ELUNO_DB_PATH", str(tmp_path / "demo.sqlite3"))
+    monkeypatch.setenv('ELUNO_PRIVATE_LOOKUP', '0')
     monkeypatch.setenv("ELUNO_MOCK_URL", str(backend.client.base_url))
     store = state_store()
     for username, role, staff in [
@@ -43,7 +44,7 @@ def sign_in(client, username="manager"):
 def prepare(client, **changes):
     """Prepare a valid fixture bill while allowing targeted scenario changes."""
     payload = {
-        "phone": "+919000000005",
+        "phone": "+919000000004",
         "store_code": "HSR",
         "staff_id": "S108",
         "variant_ids": [91000003, 91000083],
@@ -121,9 +122,9 @@ def test_family_distinct_prescriptions_single_order(demo):
         client,
         variant_ids=[],
         members=[
-            {"phone": "+919000000005", "variant_ids": [91000003, 91000083]},
+            {"phone": "+919000000013", "variant_ids": [91000003, 91000083]},
             {"phone": "+919000000004", "variant_ids": [91000005, 91000083]},
-            {"phone": "+919000000007", "variant_ids": [91000006, 91000083]},
+            {"phone": "+919000000015", "variant_ids": [91000006, 91000083]},
         ],
     )
     finished = complete(client, quote["checkout_id"])
@@ -276,7 +277,7 @@ def test_clinical_axis_validation_and_role(demo):
     assert response.status_code == 200, response.text
     assert response.json()["optometrist_id"] == "S107"
     sign_in(client, "manager")
-    quote = prepare(client)
+    quote = prepare(client, phone="+919000000005")
     detail = client.get("/api/checkouts/" + quote["checkout_id"] + "/detail").json()
     assert detail["quote"]["lines"][1]["rx_id"] == response.json()["rx_id"]
 
@@ -319,7 +320,7 @@ def test_company_remake_does_not_touch_frame(demo):
         json={
             "checkout_id": original["checkout_id"],
             "lens_variant_id": 91000083,
-            "wearer_phone": "+919000000005",
+            "wearer_phone": "+919000000004",
             "reason": "progressive adaptation",
             "cost_owner": "company",
             "lab_cost_paise": 120000,
@@ -393,3 +394,30 @@ def test_store_day_and_persistent_mock_snapshot():
     restored = restore_state(json.loads(json.dumps(snapshot_state(source))))
     assert restored["inventory"] == source["inventory"]
     assert restored["orders"] == source["orders"]
+
+
+# Keep every cart draft snapshot queryable in SQLite as it changes.
+def test_cart_history_keeps_draft_and_quoted_snapshots(demo):
+    """Draft changes append snapshots and quoted carts point to checkout rows."""
+    client, store, _ = demo
+    sign_in(client, "cashier")
+    draft = {"store_code": "HSR", "members": [{"phone": "9000000005", "variant_ids": [91000003]}]}
+    response = client.put("/api/draft", json=draft)
+    assert response.status_code == 200, response.text
+    from app.domain.models import CheckoutStatus
+    store.create_checkout("HSR", checkout_id="checkout-demo-1")
+    store.change_status("checkout-demo-1", CheckoutStatus.DRAFT, CheckoutStatus.PAYMENT_PENDING)
+    store.change_status("checkout-demo-1", CheckoutStatus.PAYMENT_PENDING, CheckoutStatus.PAYMENT_CAPTURED)
+    store.change_status("checkout-demo-1", CheckoutStatus.PAYMENT_CAPTURED, CheckoutStatus.ORDER_PENDING)
+    store.change_status("checkout-demo-1", CheckoutStatus.ORDER_PENDING, CheckoutStatus.ORDER_RECORDED)
+    quoted = {**draft, "quote_id": "checkout-demo-1"}
+    client.put("/api/draft", json=quoted)
+    with store._connect() as connection:
+        rows = connection.execute(
+            "SELECT saved_status, checkout_id, checkout_status, payload FROM cart_tracking "
+            "WHERE username='cashier' ORDER BY snapshot_id"
+        ).fetchall()
+    assert [row["saved_status"] for row in rows] == ["draft", "quoted"]
+    assert json.loads(rows[0]["payload"])["members"][0]["phone"] == "+919000000005"
+    assert rows[1]["checkout_id"] == "checkout-demo-1"
+    assert rows[1]["checkout_status"] == "order_recorded"

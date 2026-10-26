@@ -3,18 +3,31 @@
 from typing import Any
 from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel, Field
+from app.phone import PhoneNumber
 
 
 class WearerSelection(BaseModel):
-    phone: str = Field(
-        description="Existing wearer phone; their own latest valid prescription is used.",
-        examples=["+919000000005"],
+    phone: PhoneNumber = Field(
+        description="Existing wearer phone; their own latest complete valid prescription is used.",
+        examples=["+919000000004"],
     )
     variant_ids: list[int] = Field(
-        description="1–30 units for this wearer; repeat variant IDs for quantity. Frames and lenses pair in their respective selection order; extra items remain standalone.",
-        min_length=1,
+        default_factory=list,
+        description="Selected frame and lens variant IDs. Every optical frame needs exactly one paired lens. Sunglasses can be ready-to-wear or paired with one prescription lens.",
         max_length=30,
         examples=[[91000003, 91000083]],
+    )
+    lens_only_variant_ids: list[int] = Field(
+        default_factory=list,
+        description="Lens pairs sold without frames. Each item is one lens-pair variant and is validated against this wearer's current prescription.",
+        max_length=30,
+        examples=[[91000083]],
+    )
+    frame_only_variant_ids: list[int] = Field(
+        default_factory=list,
+        description="Explicit frame-only purchases. These frames have no lens or prescription attached; move a frame into variant_ids with its lens to sell a complete prescription pair.",
+        max_length=30,
+        examples=[[91000003]],
     )
 
 
@@ -55,6 +68,8 @@ class CheckoutStateSchema(BaseModel):
     error_detail: str | None
     created_at: str
     updated_at: str
+    checkout_elapsed_ms: float | None = None
+    timing_recorded_at: str | None = None
 
 
 class RefundPreviewSchema(BaseModel):
@@ -79,6 +94,8 @@ class CheckoutEvidenceSchema(BaseModel):
     refunds: list[dict[str, Any]] = Field(
         description="Local durable refund attempts, including prepared payload_json and source IDs."
     )
+    invoice: dict[str, Any] | None = Field(default=None, description="Immutable issued invoice in SQLite; null for an unpaid draft.")
+    refund_events: list[dict[str, Any]] = Field(default_factory=list, description="Append-only refund state changes, actor references and synchronization times.")
 
 
 TAGS = [
@@ -135,17 +152,42 @@ DOCUMENTED = {
     "/api/customers": (
         "01 · Read source data",
         "2b. Fetch the customer and prescriptions",
-        "Calls Shopify customers/search.json for phone lookup, and SMT /smt/prescriptions. Locally authored optometrist prescriptions are merged with the SMT results. Priority/campaign flags come from customer tags.",
+        "Existing-customer lookup, not registration. Supply phone in a JSON body; it is normalized to +91 plus ten digits. The standard demo runner uses body-based /eluno/customer-lookup and /eluno/prescription-lookup extensions in its durable mock wrapper. Explicit legacy adapter mode uses the original exercise GET contracts, which put phone in upstream URLs. Local clinician records are merged with source prescriptions; sale preparation chooses the latest valid one. Requires session and CSRF.",
     ),
     "/api/inventory": (
         "01 · Read source data",
         "2c. Check stock at the billing store",
         "Reads Shopify location mapping and inventory_levels.json. Keep inventory_item_id separate from variant_id. Note a frame’s quantity now and compare after sale/refund.",
     ),
+    "/api/draft": (
+        "01 · Durable local records",
+        "Resume the latest cashier draft",
+        "GET returns the current user's resumable draft. PUT saves an append-only cart_snapshots version with draft_id, actor username/staff ID, created/saved timestamps and time since the prior save. The drafts table is only the latest resume pointer; history is available from /api/drafts/history.",
+    ),
+    "/api/draft/metadata": (
+        "01 · Durable local records",
+        "Read the active draft ID and timestamps",
+        "Returns lifecycle and actor metadata separately so the existing GET /api/draft cart payload contract remains unchanged.",
+    ),
+    "/api/drafts/history": (
+        "01 · Durable local records",
+        "Inspect all saved draft versions",
+        "Reads SQLite cart_snapshots joined to checkouts and the returned Shopify order reference. The listing omits cart contents and phone numbers; full payloads remain in the local SQLite database and cart_tracking view.",
+    ),
+    "/api/prescriptions": (
+        "01 · Durable local records",
+        "Record a clinician-authored prescription",
+        "Writes the Rx ID, normalized customer phone, authenticated username, staff ID, store and creation time into SQLite prescriptions. Local clinical additions are merged into customer prescription lookup.",
+    ),
+    "/api/prescriptions/history": (
+        "01 · Durable local records",
+        "Inspect prescription authorship",
+        "Returns Rx ID, customer ID, valid-through date, author, staff ID, store and timestamp without disclosing phone numbers.",
+    ),
     "/sales/prepare": (
         "02 · Quote — no payment",
         "3. Prepare a validated quote",
-        "Reads customer, variants, billing location and stock from Shopify; staff and wearer prescriptions from SMT/local clinical records. Calculates offers and effective-date HSN GST using local configuration. Saves quote/order_payload in SQLite and reserves a store invoice number. Returns checkout_id. It does NOT charge payment, create a Shopify order or reserve physical inventory.",
+        "Reads customer, variants, billing location and stock from Shopify; staff and wearer prescriptions from SMT/local clinical records. A wearer can bill frame/lens pairs, ready-to-wear or prescription sunglasses, or lens-only pairs through lens_only_variant_ids. Every lens is validated against that wearer's prescription and carried on its Shopify line; standalone lens pairs have no frame pair_ref and do not affect frame inventory. Calculates effective-date HSN GST and discounts from local data. No coupon is applied unless selected_offer_id is supplied; then the server rechecks dates and cart/customer conditions and applies only that coupon. No manager discount is applied unless both override_bps and reason_code are provided with an authorized identity. Manager discount is exclusive of a coupon. Saves quote/order_payload in SQLite and reserves a store invoice number. Returns checkout_id. It does NOT charge payment, create a Shopify order or reserve physical inventory.",
     ),
     "/sales/{checkout_id}/complete": (
         "03 · Confirm and inspect",
@@ -155,12 +197,12 @@ DOCUMENTED = {
     "/checkouts/{checkout_id}": (
         "03 · Confirm and inspect",
         "Inspect durable local checkout state",
-        "Reads SQLite only. Shows which financial stage finished and which external references were saved; this does not fetch the source order.",
+        "Reads SQLite only. Shows which financial stage finished, external references and completion duration stored directly on the checkout row; this does not fetch the source order.",
     ),
     "/api/checkouts/{identifier}/detail": (
         "03 · Confirm and inspect",
         "5. Compare prepared payload with the source order",
-        "Reads local checkout/quote/refund attempts and GETs Shopify orders/{id}.json when an order ID exists. Expand quote.order_payload for prepared source fields; completion additionally sends transactions. Expand order for the actual returned source record. order.refunds proves the Shopify refund exists.",
+        "Reads local checkout/quote/refund_attempts and GETs Shopify orders/{id}.json when an order ID exists. Checkout duration is on the checkout row. Expand quote.order_payload for prepared source fields; completion additionally sends transactions. Expand order for the actual returned source record. order.refunds proves the Shopify refund exists; compare it with the local refund attempt and IDs.",
     ),
     "/refunds/prepare": (
         "04 · Refund and reconcile",
@@ -182,10 +224,20 @@ DOCUMENTED = {
         "Recover an uncertain source refund without refunding twice",
         "GETs the original source order and matches eluno_refund_id. It does not repeat the terminal refund or source write.",
     ),
+    "/api/till/{action}": (
+        "05 · Source reports",
+        "Open, record paid-in or expense, and close a drawer",
+        "Actions: open, paid-in, expense (paid-out), close. Amounts are integer paise. Paid-ins/expenses require a positive amount and a reason of at least three characters; they record the authenticated actor. Expected cash includes paid-ins without treating them as sales revenue. Close requires manager/admin and rejects unresolved financial operations.",
+    ),
     "/api/reports": (
         "05 · Source reports",
         "7. Read Shopify back and reconcile the result",
         "Reads source orders and nested refunds. Uses Asia/Kolkata order-day sales and refund-event-day collections, with channel attribution and payment-to-order deltas. Compare before and after refund. Not calculated merely from local checkout rows.",
+    ),
+    "/api/reports/export": (
+        "05 · Source reports",
+        "Download the selected date as a CSV",
+        "Shopify-derived bill count, gross, taxable, tax, discount, refunds and cash/card/UPI totals. basis=day_end matches the original order-date report, including all refunds on those orders. basis=daily matches the website's refund-event-date collection summary. Store roles are restricted to their own store; central roles can download all seven stores and combined totals.",
     ),
     "/reports/day-end": (
         "05 · Source reports",
@@ -269,19 +321,47 @@ For every operation, expand the description, inspect the request **Schema**, the
                 "application/json"
             ]["schema"] = {"$ref": "#/components/schemas/" + model_name}
         sample = {
-            "phone": "+919000000005",
+            "phone": "+919000000004",
             "store_code": "HSR",
             "staff_id": "S108",
             "variant_ids": [91000003, 91000083],
             "payment_method": "upi",
             "channel": "walk_in",
         }
+        coupon_sample = {**sample, "selected_offer_id": "FESTIVE10"}
         schema["paths"]["/sales/prepare"]["post"]["requestBody"]["content"][
             "application/json"
         ]["examples"] = {
             "single_pair": {
                 "summary": "One customer / one pair — manager S108",
                 "value": sample,
+            },
+            "one_selected_coupon": {
+                "summary": "Apply only the selected coupon",
+                "value": coupon_sample,
+            },
+            "lens_only_pair": {
+                "summary": "Sell one prescription lens pair without a frame",
+                "value": {
+                    **sample,
+                    "variant_ids": [],
+                    "members": [
+                        {
+                            "phone": "+919000000004",
+                            "variant_ids": [],
+                            "lens_only_variant_ids": [91000083],
+                        }
+                    ],
+                },
+            },
+            "exact_manager_discount": {
+                "summary": "Apply the entered 5% manager discount only",
+                "value": {
+                    **sample,
+                    "override_bps": 500,
+                    "reason_code": "walk_out_retention",
+                    "selected_offer_id": "MANAGER_OVERRIDE",
+                },
             },
             "family": {
                 "summary": "Three wearers / three prescriptions / one invoice",
@@ -291,9 +371,9 @@ For every operation, expand the description, inspect the request **Schema**, the
                     "members": [
                         {"phone": phone, "variant_ids": variants}
                         for phone, variants in [
-                            ("+919000000005", [91000003, 91000083]),
+                            ("+919000000013", [91000003, 91000083]),
                             ("+919000000004", [91000005, 91000083]),
-                            ("+919000000007", [91000006, 91000083]),
+                            ("+919000000015", [91000006, 91000083]),
                         ]
                     ],
                 },
@@ -311,7 +391,7 @@ For every operation, expand the description, inspect the request **Schema**, the
                     continue
                 for parameter in operation.get("parameters", []):
                     if parameter["name"] == "phone":
-                        parameter["example"] = "+919000000005"
+                        parameter["example"] = "+919000000004"
                     if parameter["name"] == "store_code":
                         parameter["example"] = "HSR"
                 if path not in {"/health", "/auth/login"}:

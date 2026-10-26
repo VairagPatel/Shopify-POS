@@ -1,5 +1,6 @@
 """Multi-pair support against the unmodified Shopify/store/terminal mock."""
 
+from app.gateways.billing import BillingAdapter
 import pytest
 from app.services.sale import SaleValidationError, SaleService
 from app.services.refunds import RefundService
@@ -11,18 +12,21 @@ from test_stage5 import backend
 @pytest.fixture
 def cart_env(tmp_path, backend):
     "Support cart env."
-    service = SaleService(SQLiteStore(str(tmp_path / "multipair.db")), backend)
+    service = SaleService(
+        SQLiteStore(str(tmp_path / "multipair.db")), BillingAdapter(backend)
+    )
     return service, backend
 
 
 # Support multi.
-def multi(service, variants=None):
+def multi(service, variants=None, **changes):
     "Support multi."
     return service.prepare(
-        phone="+919000000005",
+        phone="+919000000004",
         store_code="HSR",
         staff_id="S105",
         variant_ids=variants or [91000003, 91000005, 91000083, 91000084],
+        **changes,
     )
 
 
@@ -36,7 +40,7 @@ def test_two_pairs_prescription_offer_order_and_full_refund(cart_env):
     }
     if not all(q >= 1 for q in before.values()):
         pytest.skip("Seed has insufficient inventory for selected two frames")
-    q = multi(service)
+    q = multi(service, selected_offer_id="SECONDPAIR50")
     saved = service.store.load_quote(q["checkout_id"])
     lines = saved["order_payload"]["line_items"]
     assert len(lines) == 4
@@ -51,7 +55,7 @@ def test_two_pairs_prescription_offer_order_and_full_refund(cart_env):
         api.stock(item, 70000002) == before[v] - 1
         for v, item in [(91000003, 92000003), (91000005, 92000005)]
     )
-    refund = RefundService(service.store, api)
+    refund = RefundService(service.store, BillingAdapter(api))
     prepared = refund.prepare(q["checkout_id"], "returned")
     refund.complete(prepared["refund_id"])
     assert all(

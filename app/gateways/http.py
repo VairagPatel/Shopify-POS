@@ -6,42 +6,70 @@ the supplied terminal mock does not actually guarantee idempotency by order_ref.
 
 import time
 import httpx
-
-
-class GatewayError(Exception):
-    # Initialize the adapter or service with its explicit dependencies.
-    def __init__(self, message, *, status_code=None, uncertain=False):
-        super().__init__(message)
-        self.status_code = status_code
-        self.uncertain = uncertain
+from app.phone import normalize_phone
+from app.domain.errors import GatewayError
+from app.constants import (
+    DEFAULT_MOCK_URL,
+    HTTP_TIMEOUT_SECONDS,
+    SAFE_READ_ATTEMPTS,
+    RETRY_BACKOFF_SECONDS,
+    MAX_RETRY_DELAY_SECONDS,
+    MOCK_ORDER_LIMIT,
+    MOCK_SHOPIFY_API_PREFIX,
+)
 
 
 class MockHTTP:
+    # Keep provider serialization behind the adapter instead of inside pricing orchestration.
+    def build_order_payload(self, **pricing_context):
+        from app.gateways.shopify_mapping import build_order_payload
+
+        return build_order_payload(**pricing_context)
+
     # Initialize the adapter or service with its explicit dependencies.
     def __init__(
-        self, base_url="http://127.0.0.1:8787", *, transport=None, timeout=4.0
+        self,
+        base_url=DEFAULT_MOCK_URL,
+        *,
+        transport=None,
+        timeout=HTTP_TIMEOUT_SECONDS,
+        private_lookup=False,
     ):
         "Initialize the adapter or service with its explicit dependencies."
         self.client = httpx.Client(
             base_url=base_url.rstrip("/"), transport=transport, timeout=timeout
         )
+        self.private_lookup = private_lookup
 
     # Retry safe reads only; send financial mutations exactly once.
     def request(self, method, path, *, params=None, json=None):
         "Retry safe reads only; send financial mutations exactly once."
         safe = method.upper() == "GET"
-        for attempt in range(3 if safe else 1):
+        for attempt in range(SAFE_READ_ATTEMPTS if safe else 1):
             try:
                 response = self.client.request(method, path, params=params, json=json)
             except httpx.RequestError as exc:
-                if safe and attempt < 2:
-                    time.sleep(0.1 * (attempt + 1))
+                if safe and attempt < SAFE_READ_ATTEMPTS - 1:
+                    time.sleep(RETRY_BACKOFF_SECONDS * (attempt + 1))
                     continue
                 raise GatewayError(
                     f"{method} {path}: transport error: {exc}", uncertain=not safe
                 ) from exc
-            if safe and response.status_code in (429, 503) and attempt < 2:
-                time.sleep(min(float(response.headers.get("Retry-After", "0.1")), 1.0))
+            if (
+                safe
+                and response.status_code in (429, 503)
+                and attempt < SAFE_READ_ATTEMPTS - 1
+            ):
+                time.sleep(
+                    min(
+                        float(
+                            response.headers.get(
+                                "Retry-After", str(RETRY_BACKOFF_SECONDS)
+                            )
+                        ),
+                        MAX_RETRY_DELAY_SECONDS,
+                    )
+                )
                 continue
             if not 200 <= response.status_code < 300:
                 raise GatewayError(
@@ -55,7 +83,7 @@ class MockHTTP:
     # Prefix the mock Shopify API version and delegate transport handling.
     def shopify(self, method, path, **kw):
         "Prefix the mock Shopify API version and delegate transport handling."
-        return self.request(method, "/admin/api/2026-10/" + path.lstrip("/"), **kw)
+        return self.request(method, MOCK_SHOPIFY_API_PREFIX + path.lstrip("/"), **kw)
 
     # Fetch the source store and warehouse location mappings.
     def locations(self):
@@ -65,6 +93,12 @@ class MockHTTP:
     # Look up an existing synthetic Shopify customer by exact phone.
     def customer(self, phone):
         "Look up an existing synthetic Shopify customer by exact phone."
+        phone = normalize_phone(phone)
+        if self.private_lookup:
+            customers = self.request(
+                "POST", "/eluno/customer-lookup", json={"phone": phone}
+            )["customers"]
+            return customers[0] if customers else None
         customers = self.shopify(
             "GET", "customers/search.json", params={"query": "phone:" + phone}
         )["customers"]
@@ -88,6 +122,11 @@ class MockHTTP:
     # Retrieve all source prescriptions for the requested customer.
     def prescriptions(self, phone):
         "Retrieve all source prescriptions for the requested customer."
+        phone = normalize_phone(phone)
+        if self.private_lookup:
+            return self.request(
+                "POST", "/eluno/prescription-lookup", json={"phone": phone}
+            )["prescriptions"]
         return self.request("GET", "/smt/prescriptions", params={"phone": phone})[
             "prescriptions"
         ]
@@ -121,7 +160,7 @@ class MockHTTP:
         return self.shopify("POST", "orders.json", json={"order": payload})["order"]
 
     # Read the bounded source order collection for reporting and reconciliation.
-    def orders(self, limit=250):
+    def orders(self, limit=MOCK_ORDER_LIMIT):
         "Read the bounded source order collection for reporting and reconciliation."
         return self.shopify(
             "GET", "orders.json", params={"status": "any", "limit": limit}

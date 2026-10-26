@@ -71,7 +71,7 @@ Swagger sends the login request and the browser keeps the session cookie. Its re
 ### 2. Show inputs arriving from external systems
 
 - `GET /api/bootstrap`: inspect store `HSR`, staff `S108` and catalog variants. This reads Shopify locations/products and SMT staff; the customer directory is the local fixture aid.
-- `GET /api/customers?phone=+919000000005`: inspect returned customer tags and prescriptions. Swagger URL-encodes the `+` when you enter the query value.
+- `POST /api/customers` with JSON body `{"phone":"9000000005"}`: inspect the normalized customer phone, tags and prescriptions. No phone is included in the request URL. The default runner uses body-based mock-wrapper lookups upstream too.
 - `GET /api/inventory?store_code=HSR`: note the chosen frame's `inventory_item_id` and available quantity. For frame variant `91000003`, the inventory item is `92000003`.
 
 Explain: “These are source records. I haven't created a bill or moved money.”

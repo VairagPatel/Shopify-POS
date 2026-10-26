@@ -1,3 +1,5 @@
+> Historical audit. See docs/FINAL_REQUIREMENT_AUDIT.md for the 26 October final-scope audit and 346-test evidence.
+
 # Audit against the original exercise — 25 October 2026
 
 ## Verdict

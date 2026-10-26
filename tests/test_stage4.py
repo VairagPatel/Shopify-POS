@@ -21,7 +21,7 @@ TODAY = date(2026, 10, 24)
 # Support rx.
 def rx(
     right=EyePower("-3.00", "-1.00", 90, "1.50"),
-    left=EyePower("-2.00", "0"),
+    left=EyePower("-2.00", "0", 90, "1.50"),
     expiry=date(2026, 12, 31),
 ):
     "Support rx."
@@ -58,12 +58,30 @@ def basic_meta():
 def test_rx_valid_boundaries(basic_meta):
     "Verify rx valid boundaries."
     result = validate_lens(
-        rx(right=EyePower("-4", "-2", 180), left=EyePower("4", "2", 1)),
+        rx(right=EyePower("-4", "-2", 180, "1.50"), left=EyePower("4", "2", 5, "1.50")),
         lens(basic_meta),
         basic_meta,
         on_date=TODAY,
     )
     assert result.valid
+
+
+# Accept a missing optional single-vision ADD, but reject missing axis or off-grid axis.
+def test_rx_allows_optional_single_vision_add_and_requires_axis(basic_meta):
+    """Single-vision validation allows absent ADD but still requires a valid axis."""
+    incomplete = rx(right=EyePower("-2", "0"), left=EyePower("-2", "0", 90, "1.50"))
+    result = validate_lens(incomplete, lens(basic_meta), basic_meta, on_date=TODAY)
+    assert not result.valid
+    assert any("axis is required" in reason for reason in result.reasons)
+    assert not any("ADD" in reason for reason in result.reasons)
+
+    off_grid = rx(
+        right=EyePower("-2", "0", 91, "1.50"),
+        left=EyePower("-2", "0", 90, "1.50"),
+    )
+    result = validate_lens(off_grid, lens(basic_meta), basic_meta, on_date=TODAY)
+    assert not result.valid
+    assert any("5-degree steps" in reason for reason in result.reasons)
 
 
 # Verify rx rejects expired and outside limits.
@@ -101,6 +119,36 @@ def test_rx_requires_add_for_progressive(basic_meta):
     assert not result.valid and any("ADD" in x for x in result.reasons)
 
 
+# Verify a missing ADD is accepted for a single-vision lens, but not progressive.
+def test_missing_add_is_optional_only_for_single_vision(basic_meta):
+    "Verify a missing ADD is optional only for single vision."
+    no_add = rx(
+        right=EyePower("-2", "0", 90, None),
+        left=EyePower("-2", "0", 90, None),
+    )
+    single_vision = validate_lens(no_add, lens(basic_meta), basic_meta, on_date=TODAY)
+    assert single_vision.valid
+
+    progressive_meta = {
+        **basic_meta,
+        "lens_type": "progressive",
+        "rx_limits": {
+            **basic_meta["rx_limits"],
+            "add_required": True,
+            "add_min": 0.75,
+            "add_max": 3.0,
+        },
+    }
+    progressive = validate_lens(
+        no_add,
+        LensConfiguration("progressive", "1.6", "standard", "L2"),
+        progressive_meta,
+        on_date=TODAY,
+    )
+    assert not progressive.valid
+    assert any("ADD is required" in reason for reason in progressive.reasons)
+
+
 # Verify rx rejects variant mismatch.
 def test_rx_rejects_variant_mismatch(basic_meta):
     "Verify rx rejects variant mismatch."
@@ -120,7 +168,7 @@ def test_catalog_real_seed_lens_validation():
     )
     meta = variant_metadata(str(v["id"]))
     result = validate_lens(
-        rx(right=EyePower("0", "0"), left=EyePower("0", "0")),
+        rx(right=EyePower("0", "0", 90, "1.00"), left=EyePower("0", "0", 90, "1.00")),
         lens(meta, str(v["id"])),
         meta,
         on_date=TODAY,
@@ -210,32 +258,95 @@ def offers():
     return load_json("offers.json")
 
 
-# Verify seed festive exclusive.
-def test_seed_festive_exclusive():
-    "Verify seed festive exclusive."
+# Verify coupon remains blank until explicitly selected.
+def test_coupon_requires_explicit_selection():
+    "Verify no coupon applies until the cashier selects one."
     result = evaluate_offers(
         cart([line("frame", 100000, "f")]),
         Customer("c1", "999"),
         offers(),
         on_date=TODAY,
     )
-    assert result.total_discount_paise == 10000
-    assert next(x for x in result.decisions if x.offer_id == "FESTIVE10").applied
+    assert result.total_discount_paise == 0
+    assert not any(decision.applied for decision in result.decisions)
+    selected = evaluate_offers(
+        cart([line("frame", 100000, "f")]),
+        Customer("c1", "999"),
+        offers(),
+        on_date=TODAY,
+        selected_offer_id="FESTIVE10",
+    )
+    assert selected.total_discount_paise == 10000
 
 
-# Verify stack priority bundle and tag.
-def test_stack_priority_bundle_and_tag():
-    "Verify stack priority bundle and tag."
+# Verify explicitly selected coupon is the only applied offer, even when stackable.
+def test_selected_coupon_applies_alone():
+    "Verify explicitly selected coupon is the only applied offer."
+    c = cart(
+        [
+            line("frame", 200000, "f", "p1"),
+            line("lens", 100000, "l", "p1"),
+            line("frame", 200000, "f2", "p2"),
+            line("lens", 80000, "l2", "p2"),
+        ]
+    )
+    result = evaluate_offers(
+        c,
+        Customer("c1", "999", ("priority",)),
+        offers(),
+        on_date=TODAY,
+        selected_offer_id="BUNDLE300",
+    )
+    assert result.total_discount_paise == 30000
+    assert {decision.offer_id for decision in result.decisions if decision.applied} == {
+        "BUNDLE300"
+    }
+
+
+# Verify manager percentage is exact and excludes every standard promotion.
+def test_selected_manager_discount_is_exact_and_exclusive():
+    "Verify manager percentage is exact and excludes standard offers."
+    result = evaluate_offers(
+        cart([line("frame", 100000, "f")]),
+        Customer("c1", "999"),
+        offers(),
+        on_date=TODAY,
+        manager_role="store_manager",
+        reason_code="walk_out_retention",
+        override_bps=500,
+        selected_offer_id="MANAGER_OVERRIDE",
+    )
+    assert result.total_discount_paise == 5000
+    assert {decision.offer_id for decision in result.decisions if decision.applied} == {
+        "MANAGER_OVERRIDE"
+    }
+
+
+# Verify standalone lens pairs count toward the second-pair lens promotion.
+def test_lens_only_pairs_support_lens_offers():
+    "Verify standalone lens pairs are offer-eligible without frame bundle discounts."
+    c = cart([line("lens", 40000, "l1"), line("lens", 30000, "l2")])
+    result = evaluate_offers(
+        c, Customer("c1", "999"), offers(), on_date=TODAY,
+        selected_offer_id="SECONDPAIR50",
+    )
+    assert next(
+        decision for decision in result.decisions if decision.offer_id == "SECONDPAIR50"
+    ).amount_paise == 15000
+    assert not next(
+        decision for decision in result.decisions if decision.offer_id == "BUNDLE300"
+    ).applied
+
+
+# Verify multiple eligible coupons remain unapplied without selection.
+def test_eligible_coupons_are_not_stacked_automatically():
+    "Verify eligible coupons remain blank until one is selected."
     c = cart([line("frame", 200000, "f", "p1"), line("lens", 100000, "l", "p1")])
     result = evaluate_offers(
         c, Customer("c1", "999", ("priority",)), offers(), on_date=TODAY
     )
-    # Stackable priority ₹500 + bundle ₹300 beats frame-only festive ₹200
-    assert result.total_discount_paise == 80000
-    assert {d.offer_id for d in result.decisions if d.applied} == {
-        "PRIORITY500",
-        "BUNDLE300",
-    }
+    assert result.total_discount_paise == 0
+    assert not any(decision.applied for decision in result.decisions)
 
 
 # Verify second pair eligible and single pair rejected.
@@ -248,7 +359,8 @@ def test_second_pair_eligible_and_single_pair_rejected():
         line("lens", 30000, "l2", "p2"),
     ]
     result = evaluate_offers(
-        cart(lines), Customer("c1", "999"), offers(), on_date=TODAY
+        cart(lines), Customer("c1", "999"), offers(), on_date=TODAY,
+        selected_offer_id="SECONDPAIR50",
     )
     second = next(x for x in result.decisions if x.offer_id == "SECONDPAIR50")
     assert second.applied and second.amount_paise == 15000
@@ -276,6 +388,7 @@ def test_expired_offer_and_manager_requires_approval():
         manager_role="store_manager",
         reason_code="LOYALTY",
         override_bps=1000,
+        selected_offer_id="MANAGER_OVERRIDE",
     )
     assert (
         any(

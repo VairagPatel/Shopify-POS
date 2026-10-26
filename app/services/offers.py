@@ -1,5 +1,6 @@
 """Deterministic seeded offer rules; no network access or arbitrary code execution."""
 
+from app.constants import BASIS_POINTS_PER_UNIT
 from dataclasses import dataclass
 from datetime import date
 from typing import Mapping, Sequence
@@ -48,7 +49,7 @@ def _allocate(
     return tuple(result)
 
 
-# Apply highest-priority valid non-stackable OR valid stackable set, whichever saves more.
+# Validate and apply one explicitly selected coupon or manager offer.
 def evaluate_offers(
     cart: Cart,
     customer: Customer,
@@ -59,13 +60,26 @@ def evaluate_offers(
     manager_role: str | None = None,
     reason_code: str | None = None,
     override_bps: int | None = None,
+    selected_offer_id: str | None = None,
 ) -> OfferResult:
-    """Apply highest-priority valid non-stackable OR valid stackable set, whichever saves more.
-
-    This policy is a documented v1 interpretation, not confirmed business policy.
-    """
+    """Apply only the explicitly selected coupon or manager offer after validation."""
     lens_metadata = lens_metadata or {}
     lines = cart.lines
+    offer_ids = {str(row["offer_id"]) for row in offers}
+    if selected_offer_id is not None and selected_offer_id not in offer_ids:
+        raise ValueError("Selected coupon does not exist in offers.json")
+    # Offers are opt-in: the cashier must select a coupon, or a validated
+    # manager override must be supplied. Never apply a coupon implicitly.
+    if selected_offer_id is None:
+        return OfferResult(
+            tuple(
+                OfferDecision(
+                    str(row["offer_id"]), False, 0, "no coupon selected", tuple(0 for _ in lines)
+                )
+                for row in sorted(offers, key=lambda item: (int(item["priority"]), str(item["offer_id"])))
+            ),
+            tuple(0 for _ in lines),
+        )
     gross = [x.quantity * x.unit_price_paise for x in lines]
     pairs = {x.pair_ref for x in lines if x.pair_ref}
     pair_count = len(pairs) + sum(
@@ -78,6 +92,13 @@ def evaluate_offers(
         rule = row["rule"]
         reason = None
         eligible = []
+        if selected_offer_id is not None and oid != selected_offer_id:
+            preliminary[oid] = (
+                row,
+                tuple([0] * len(lines)),
+                "another coupon was selected",
+            )
+            continue
         if not row.get("active", False) or not date.fromisoformat(
             row["valid_from"]
         ) <= on_date <= date.fromisoformat(row["valid_to"]):
@@ -145,7 +166,7 @@ def evaluate_offers(
                 if disc.get("on") == "lowest_priced_lens_line":
                     eligible = [min(eligible, key=lambda i: (gross[i], i))]
                 for i in eligible:
-                    allocations[i] = rounded_div(gross[i] * bps, 10000)
+                    allocations[i] = rounded_div(gross[i] * bps, BASIS_POINTS_PER_UNIT)
             elif disc["type"] == "flat":
                 allocations = list(_allocate(int(disc["value_paise"]), eligible, gross))
             elif "value_bps_max" in disc:
@@ -157,10 +178,12 @@ def evaluate_offers(
                     )
                 else:
                     for i in eligible:
-                        allocations[i] = rounded_div(gross[i] * override_bps, 10000)
+                        allocations[i] = rounded_div(
+                            gross[i] * override_bps, BASIS_POINTS_PER_UNIT
+                        )
             else:
                 reason = "unsupported discount rule"
-            cap = disc.get("max_discount_paise")
+            cap = rule.get("max_discount_paise", disc.get("max_discount_paise"))
             if cap is not None and sum(allocations) > int(cap):
                 allocations = list(_allocate(int(cap), eligible, allocations))
         preliminary[oid] = (row, tuple(allocations), reason)

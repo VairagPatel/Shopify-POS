@@ -4,13 +4,15 @@ import os
 from contextlib import contextmanager
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.persistence.sqlite import SQLiteStore, CheckoutNotFound, StateConflict
 from app.gateways.http import GatewayError
 from app.services.sale import SaleService, SaleValidationError
 from app.operations import OperationsGateway
+from app.gateways.billing import BillingAdapter
 from app.security import initialize_security
 from app.api_documentation import WearerSelection, install_api_documentation
+from app.phone import PhoneNumber
 
 app = FastAPI(title="Eluno Store Studio", version="1.0.0", docs_url=None)
 
@@ -31,16 +33,16 @@ def service(service_type=SaleService):
     gateway = OperationsGateway(store)
     try:
         yield (
-            service_type(gateway)
+            service_type(BillingAdapter(gateway))
             if service_type is DayEndService
-            else service_type(store, gateway)
+            else service_type(store, BillingAdapter(gateway))
         )
     finally:
         gateway.client.close()
 
 
 class PrepareRequest(BaseModel):
-    phone: str
+    phone: PhoneNumber
     store_code: str
     staff_id: str
     variant_ids: List[int]
@@ -48,7 +50,18 @@ class PrepareRequest(BaseModel):
     channel: str = "walk_in"
     checkout_id: Optional[str] = None
     reason_code: Optional[str] = None
-    override_bps: Optional[int] = None
+    override_bps: Optional[int] = Field(
+        default=None,
+        description="Manager-entered discount in basis points (500 = 5%). Applies exactly as entered and exclusively of other offers; requires manager permission and a reason.",
+        ge=0,
+        le=1000,
+    )
+    selected_offer_id: Optional[str] = Field(
+        default=None,
+        description="Optional offer_id from offers.json. Only this offer is applied after server validation. Omit to apply no coupon discount.",
+        min_length=1,
+        max_length=80,
+    )
     members: Optional[List[WearerSelection]] = None
 
 

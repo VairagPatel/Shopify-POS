@@ -4,10 +4,13 @@ import argparse
 import importlib.util
 import json
 import os
+import sys
 from pathlib import Path
 from http.server import HTTPServer
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from app.phone import normalize_phone
 
 
 # Import the exercise server without executing its command-line entrypoint.
@@ -54,12 +57,64 @@ def serve(host, port, snapshot_path):
     }
 
     class DurableHandler(module.H):
-        """Persist mutations without changing the exercise's API or behavior."""
+        """Preserve exercise routes and add explicit body-based demo lookup extensions."""
+
+        # Never print query values, including queries sent by older clients.
+        def log_message(self, fmt, *args):
+            sys.stderr.write(f"{self.command} {self.path.split('?', 1)[0]}\n")
+
+        # Read synthetic source records directly, without translating a phone into a URL.
+        def do_POST(self):
+            if self.path not in {
+                "/eluno/customer-lookup",
+                "/eluno/prescription-lookup",
+            }:
+                return super().do_POST()
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+                if not 0 < size <= 4096:
+                    raise ValueError("Invalid lookup request size")
+                body = json.loads(self.rfile.read(size))
+                phone = (
+                    normalize_phone(body.get("phone"))
+                    if isinstance(body, dict)
+                    else normalize_phone(None)
+                )
+            except (ValueError, TypeError):
+                return self._send(
+                    422,
+                    {"error": "Supply a valid Indian mobile number in a JSON object"},
+                )
+            if self.path == "/eluno/customer-lookup":
+                return self._send(
+                    200,
+                    {
+                        "customers": [
+                            row
+                            for row in module.S["customers"]
+                            if normalize_phone(row["phone"]) == phone
+                        ]
+                    },
+                )
+            matches = [
+                row for row in module.S["rx"] if normalize_phone(row["phone"]) == phone
+            ]
+            return self._send(
+                200,
+                {
+                    "prescriptions": sorted(
+                        matches, key=lambda row: row["date"], reverse=True
+                    )
+                },
+            )
 
         # Atomically snapshot the mock before acknowledging a mutating request.
         def _send(self, code, body, extra=None):
             """Atomically snapshot the mock before acknowledging a mutating request."""
-            if self.command == "POST":
+            if self.command == "POST" and self.path not in {
+                "/eluno/customer-lookup",
+                "/eluno/prescription-lookup",
+            }:
                 temporary = destination.with_suffix(".pending")
                 with temporary.open("w", encoding="utf-8") as handle:
                     json.dump(snapshot_state(module.S), handle)

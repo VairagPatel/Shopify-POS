@@ -2,31 +2,19 @@
 
 import json
 from uuid import uuid4
-from app.persistence.sqlite import StateConflict
-from app.gateways.http import GatewayError
-from app.services.sale import paise, money
+from app.domain.errors import StateConflict
+from app.domain.errors import GatewayError
+from app.gateways.contracts import RefundGateway
+from app.persistence.contracts import RefundRepository
 
 
 class RefundValidationError(ValueError):
     pass
 
 
-# Read the persisted line classification for refund restocking decisions.
-def _type(line):
-    "Read the persisted line classification for refund restocking decisions."
-    return next(
-        (
-            x["value"]
-            for x in line.get("properties", [])
-            if x.get("name") == "line_type"
-        ),
-        None,
-    )
-
-
 class RefundService:
     # Initialize the adapter or service with its explicit dependencies.
-    def __init__(self, store, gateway):
+    def __init__(self, store: RefundRepository, gateway: RefundGateway):
         "Initialize the adapter or service with its explicit dependencies."
         self.store, self.gateway = store, gateway
 
@@ -49,60 +37,42 @@ class RefundService:
         if not charge:
             raise RefundValidationError("No captured terminal charge reference")
         lines = []
-        for line in order["line_items"]:
-            kind = _type(line)
+        for line in order["lines"]:
+            kind = line["kind"]
             if kind not in ("frame", "lens", "sunglass", "sunglasses"):
                 raise RefundValidationError(
                     "Unknown line classification: manual check required"
                 )
             lines.append(
                 {
-                    "line_item_id": line["id"],
+                    "line_id": line["id"],
                     "quantity": line["quantity"],
-                    "restock_type": "return" if kind != "lens" else "no_restock",
+                    "restock": kind != "lens",
                     **({"location_id": order["location_id"]} if kind != "lens" else {}),
                 }
             )
         if not lines or not order.get("location_id"):
             raise RefundValidationError("Missing order lines or billing location")
         calculated = self.gateway.refund_calculate(order["id"], lines)
-        suggested = calculated.get("transactions") or []
-        if len(suggested) != 1:
-            raise RefundValidationError("Missing single suggested refund transaction")
-        amount = paise(suggested[0]["amount"])
-        expected = paise(order["total_price"])
+        amount = calculated["amount_paise"]
+        expected = order["total_paise"]
         if amount != expected or amount <= 0:
             raise RefundValidationError(
                 f"Full refund mismatch: Shopify calculated {amount} paise vs sale {expected}"
             )
-        maximum = paise(suggested[0]["maximum_refundable"])
+        maximum = calculated["maximum_paise"]
         if amount > maximum:
             raise RefundValidationError("Refund exceeds maximum refundable amount")
-        expected_tax = sum(
-            paise(t["price"]) for line in order["line_items"] for t in line["tax_lines"]
-        )
-        actual_tax = sum(
-            paise(line["total_tax"]) for line in calculated["refund_line_items"]
-        )
+        expected_tax = sum(line["tax_paise"] for line in order["lines"])
+        actual_tax = calculated["tax_paise"]
         if expected_tax != actual_tax:
             raise RefundValidationError(
                 "Shopify refund tax does not reconcile with original order"
             )
-        payload = {
-            "refund_line_items": lines,
-            "transactions": [
-                {
-                    "kind": "refund",
-                    "gateway": suggested[0].get("gateway") or "razorpay_terminal",
-                    "parent_id": suggested[0].get("parent_id"),
-                    "amount": money(amount),
-                }
-            ],
-            "note": "Eluno full refund: " + reason.strip(),
-            "note_attributes": [{"name": "eluno_refund_id", "value": refund_id or ""}],
-        }
         refund_identifier = refund_id or str(uuid4())
-        payload["note_attributes"][0]["value"] = refund_identifier
+        payload = self.gateway.build_refund_payload(
+            lines, calculated, reason, refund_identifier
+        )
         row = self.store.initiate_refund(
             refund_identifier, checkout_id, order["id"], amount, payload
         )
@@ -175,12 +145,9 @@ class RefundService:
             raise StateConflict("Only uncertain Shopify refunds may be reconciled")
         order = self.gateway.order_by_id(row["shopify_order_id"])
         matches = [
-            r
-            for r in order.get("refunds", [])
-            if any(
-                x.get("name") == "eluno_refund_id" and x.get("value") == refund_id
-                for x in r.get("note_attributes", [])
-            )
+            source_refund
+            for source_refund in order.get("refunds", [])
+            if source_refund["reference"] == refund_id
         ]
         if len(matches) == 1:
             return self.store.refund_transition(

@@ -5,6 +5,7 @@ from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Mapping, Sequence
 from app.domain.models import Prescription, LensConfiguration
+from app.constants import INDIA
 
 
 @dataclass(frozen=True)
@@ -59,19 +60,25 @@ def validate_lens(
                 errors.append(
                     f"{side} cylinder {cyl} exceeds ±{maximum_cyl}; select another lens"
                 )
-            if cyl != 0 and (eye.axis is None or not 1 <= eye.axis <= 180):
-                errors.append(f"{side} cylinder requires an axis between 1 and 180")
-            if limits["add_required"] or lens.lens_type in ("progressive", "bifocal"):
-                if eye.add is None:
-                    errors.append(f"{side} ADD is required for {lens.lens_type} lens")
-                else:
-                    add = Decimal(eye.add)
-                    if not add.is_finite() or not Decimal(
-                        str(limits.get("add_min", "0"))
-                    ) <= add <= Decimal(str(limits.get("add_max", "99"))):
-                        errors.append(
-                            f"{side} ADD outside supported range; confirm prescription"
-                        )
+            if eye.axis is None:
+                errors.append(f"{side} axis is required; ask the optometrist to verify")
+            elif not 0 <= eye.axis <= 180 or eye.axis % 5:
+                errors.append(f"{side} axis must use 5-degree steps from 0 to 180")
+            # Progressive and bifocal lenses need a usable ADD. Single-vision
+            # prescriptions may legitimately omit ADD, so do not reject them.
+            if eye.add is None:
+                if limits.get("add_required", False):
+                    errors.append(
+                        f"{side} ADD is required for this lens; confirm the prescription"
+                    )
+            elif limits.get("add_required", False):
+                add = Decimal(eye.add)
+                if not add.is_finite() or not Decimal(
+                    str(limits.get("add_min", "0"))
+                ) <= add <= Decimal(str(limits.get("add_max", "5"))):
+                    errors.append(
+                        f"{side} ADD outside supported range; confirm prescription"
+                    )
         except (InvalidOperation, ValueError, TypeError, KeyError):
             errors.append(
                 f"{side} prescription contains invalid numbers; ask optometrist to verify"
@@ -91,7 +98,7 @@ def latest_valid_prescription(
         """Compare mixed source timestamps on one aware timeline without changing Rx values."""
         issued_at = prescription.issued_at or datetime.min
         if issued_at.tzinfo is None:
-            issued_at = issued_at.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+            issued_at = issued_at.replace(tzinfo=INDIA)
         return issued_at, prescription.prescription_id
 
     return max(valid, key=issued_order, default=None)

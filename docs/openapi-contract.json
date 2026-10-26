@@ -1,0 +1,2689 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Eluno Store Studio",
+    "description": "## Two clients, one backend\nThe frontend at `/` and this Swagger UI call the same FastAPI services and share the same records.\nYou can complete the whole demonstration here without opening the frontend.\n\n**Route through the demo:** login → source customer/catalog/stock → prepare → complete → detail → refund prepare/complete → source report.\n\n**Data ownership:** Shopify mock = customers, catalog, stock, orders and refunds; SMT mock = prescriptions and staff; local configuration = offers and GST; SQLite = saved quotes, invoice series, financial state, sessions, clinical additions, cash and audit.\n\n**Important:** this is a supplied Shopify-shaped mock, not a live Shopify store. All amounts named `_paise` are integer paise. Read source inventory before and after completion to prove the stock effect.\n\nFor every operation, expand the description, inspect the request **Schema**, then inspect the returned **Response body**. Copy returned checkout/refund IDs into later steps. Under detail, compare `quote.order_payload` with `order`.\n",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "07 · Demo evidence"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checkouts/{checkout_id}": {
+      "get": {
+        "tags": [
+          "03 · Confirm and inspect"
+        ],
+        "summary": "Inspect durable local checkout state",
+        "description": "Reads SQLite only. Shows which financial stage finished, external references and completion duration stored directly on the checkout row; this does not fetch the source order.",
+        "operationId": "checkout_state_checkouts__checkout_id__get",
+        "parameters": [
+          {
+            "name": "checkout_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Checkout Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutStateSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/sales/prepare": {
+      "post": {
+        "tags": [
+          "02 · Quote — no payment"
+        ],
+        "summary": "3. Prepare a validated quote",
+        "description": "Reads customer, variants, billing location and stock from Shopify; staff and wearer prescriptions from SMT/local clinical records. A wearer can bill frame/lens pairs, ready-to-wear or prescription sunglasses, or lens-only pairs through lens_only_variant_ids. Every lens is validated against that wearer's prescription and carried on its Shopify line; standalone lens pairs have no frame pair_ref and do not affect frame inventory. Calculates effective-date HSN GST and discounts from local data. No coupon is applied unless selected_offer_id is supplied; then the server rechecks dates and cart/customer conditions and applies only that coupon. No manager discount is applied unless both override_bps and reason_code are provided with an authorized identity. Manager discount is exclusive of a coupon. Saves quote/order_payload in SQLite and reserves a store invoice number. Returns checkout_id. It does NOT charge payment, create a Shopify order or reserve physical inventory.",
+        "operationId": "prepare_sales_prepare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareRequest"
+              },
+              "examples": {
+                "single_pair": {
+                  "summary": "One customer / one pair — manager S108",
+                  "value": {
+                    "phone": "+919000000004",
+                    "store_code": "HSR",
+                    "staff_id": "S108",
+                    "variant_ids": [
+                      91000003,
+                      91000083
+                    ],
+                    "payment_method": "upi",
+                    "channel": "walk_in"
+                  }
+                },
+                "one_selected_coupon": {
+                  "summary": "Apply only the selected coupon",
+                  "value": {
+                    "phone": "+919000000004",
+                    "store_code": "HSR",
+                    "staff_id": "S108",
+                    "variant_ids": [
+                      91000003,
+                      91000083
+                    ],
+                    "payment_method": "upi",
+                    "channel": "walk_in",
+                    "selected_offer_id": "FESTIVE10"
+                  }
+                },
+                "lens_only_pair": {
+                  "summary": "Sell one prescription lens pair without a frame",
+                  "value": {
+                    "phone": "+919000000004",
+                    "store_code": "HSR",
+                    "staff_id": "S108",
+                    "variant_ids": [],
+                    "payment_method": "upi",
+                    "channel": "walk_in",
+                    "members": [
+                      {
+                        "phone": "+919000000004",
+                        "variant_ids": [],
+                        "lens_only_variant_ids": [
+                          91000083
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "exact_manager_discount": {
+                  "summary": "Apply the entered 5% manager discount only",
+                  "value": {
+                    "phone": "+919000000004",
+                    "store_code": "HSR",
+                    "staff_id": "S108",
+                    "variant_ids": [
+                      91000003,
+                      91000083
+                    ],
+                    "payment_method": "upi",
+                    "channel": "walk_in",
+                    "override_bps": 500,
+                    "reason_code": "walk_out_retention",
+                    "selected_offer_id": "MANAGER_OVERRIDE"
+                  }
+                },
+                "family": {
+                  "summary": "Three wearers / three prescriptions / one invoice",
+                  "value": {
+                    "phone": "+919000000004",
+                    "store_code": "HSR",
+                    "staff_id": "S108",
+                    "variant_ids": [],
+                    "payment_method": "upi",
+                    "channel": "walk_in",
+                    "members": [
+                      {
+                        "phone": "+919000000013",
+                        "variant_ids": [
+                          91000003,
+                          91000083
+                        ]
+                      },
+                      {
+                        "phone": "+919000000004",
+                        "variant_ids": [
+                          91000005,
+                          91000083
+                        ]
+                      },
+                      {
+                        "phone": "+919000000015",
+                        "variant_ids": [
+                          91000006,
+                          91000083
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/sales/{checkout_id}/complete": {
+      "post": {
+        "tags": [
+          "03 · Confirm and inspect"
+        ],
+        "summary": "4. Confirm payment and create the source order",
+        "description": "For UPI/card: POST terminal /terminal/charges, persist charge reference, then POST Shopify orders.json with the saved lines, discounts, tax, location, invoice/checkout metadata and a successful payment transaction. Shopify creates the order and decrements tracked stock at that store. Cash and zero-charge remakes use their own local payment handling. A successful repeat returns the same order. An uncertain result is blocked for investigation.",
+        "operationId": "complete_sales__checkout_id__complete_post",
+        "parameters": [
+          {
+            "name": "checkout_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Checkout Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutStateSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/sales/{checkout_id}/reconcile-order": {
+      "post": {
+        "tags": [
+          "04 · Refund and reconcile"
+        ],
+        "summary": "Recover an uncertain order without posting again",
+        "description": "Searches source orders for the saved checkout identifier. It never automatically recharges or reposts an order.",
+        "operationId": "reconcile_order_sales__checkout_id__reconcile_order_post",
+        "parameters": [
+          {
+            "name": "checkout_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Checkout Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/refunds/prepare": {
+      "post": {
+        "tags": [
+          "04 · Refund and reconcile"
+        ],
+        "summary": "6a. Preview original-line refund and tax",
+        "description": "GETs the original Shopify order, then POSTs refunds/calculate.json to obtain refundable lines/tax/maximum amount. Saves a local refund attempt. A calculation POST is not a financial refund: no terminal refund or restock occurs yet. Returns refund_id.",
+        "operationId": "refund_prepare_refunds_prepare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundPrepareRequest"
+              },
+              "example": {
+                "checkout_id": "PASTE_RETURNED_CHECKOUT_ID",
+                "reason": "customer_return"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundPreviewSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/refunds/{refund_id}": {
+      "get": {
+        "tags": [
+          "04 · Refund and reconcile"
+        ],
+        "summary": "Refund State",
+        "description": "Return the saved refund status and external references.",
+        "operationId": "refund_state_refunds__refund_id__get",
+        "parameters": [
+          {
+            "name": "refund_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Refund Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/refunds/{refund_id}/complete": {
+      "post": {
+        "tags": [
+          "04 · Refund and reconcile"
+        ],
+        "summary": "6b. Refund payment and write back to Shopify",
+        "description": "For electronic payment: POST terminal /terminal/refunds, persist its reference, then POST Shopify orders/{id}/refunds.json. Physical frames use return at the original billing location; lenses use no_restock. The source refund reverses the original line tax. Cash refunds require an open drawer.",
+        "operationId": "refund_complete_refunds__refund_id__complete_post",
+        "parameters": [
+          {
+            "name": "refund_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Refund Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/refunds/{refund_id}/reconcile-shopify": {
+      "post": {
+        "tags": [
+          "04 · Refund and reconcile"
+        ],
+        "summary": "Recover an uncertain source refund without refunding twice",
+        "description": "GETs the original source order and matches eluno_refund_id. It does not repeat the terminal refund or source write.",
+        "operationId": "refund_reconcile_refunds__refund_id__reconcile_shopify_post",
+        "parameters": [
+          {
+            "name": "refund_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Refund Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/reports/day-end": {
+      "get": {
+        "tags": [
+          "05 · Source reports"
+        ],
+        "summary": "Original order-day report contract",
+        "description": "Preserved API: counts refunds on orders from the selected order date regardless of refund date. Use /api/reports for the newer refund-event-date view.",
+        "operationId": "day_end_reports_day_end_get",
+        "parameters": [
+          {
+            "name": "store_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Code"
+            },
+            "example": "HSR"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "06 · Store operations"
+        ],
+        "summary": "Homepage",
+        "description": "Serve the laptop interface from the same origin as the API.",
+        "operationId": "homepage__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "00 · Access"
+        ],
+        "summary": "1. Sign in directly in Swagger",
+        "description": "Authenticates a provisioned account and sets an HttpOnly session cookie. Use manager / S108 for the HSR examples, or admin. Credentials are never embedded in the schema.",
+        "operationId": "sign_in_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "00 · Access"
+        ],
+        "summary": "Inspect the signed-in role and store",
+        "description": "Returns the authenticated identity and CSRF token. Swagger uses this automatically for write requests.",
+        "operationId": "me_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "00 · Access"
+        ],
+        "summary": "Logout",
+        "description": "Delete the session server-side and expire the browser cookie.",
+        "operationId": "logout_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/bootstrap": {
+      "get": {
+        "tags": [
+          "01 · Read source data"
+        ],
+        "summary": "2a. Discover stores, products and variant IDs",
+        "description": "Reads Shopify mock locations and products plus SMT staff. The customer search directory is a local synthetic fixture; /api/customers performs the live source lookup.",
+        "operationId": "bootstrap_api_bootstrap_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/customers": {
+      "post": {
+        "tags": [
+          "01 · Read source data"
+        ],
+        "summary": "2b. Fetch the customer and prescriptions",
+        "description": "Existing-customer lookup, not registration. Supply phone in a JSON body; it is normalized to +91 plus ten digits. The standard demo runner uses body-based /eluno/customer-lookup and /eluno/prescription-lookup extensions in its durable mock wrapper. Explicit legacy adapter mode uses the original exercise GET contracts, which put phone in upstream URLs. Local clinician records are merged with source prescriptions; sale preparation chooses the latest valid one. Requires session and CSRF.",
+        "operationId": "customer_api_customers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerLookupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/inventory": {
+      "get": {
+        "tags": [
+          "01 · Read source data"
+        ],
+        "summary": "2c. Check stock at the billing store",
+        "description": "Reads Shopify location mapping and inventory_levels.json. Keep inventory_item_id separate from variant_id. Note a frame’s quantity now and compare after sale/refund.",
+        "operationId": "inventory_api_inventory_get",
+        "parameters": [
+          {
+            "name": "store_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Code"
+            },
+            "example": "HSR"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/transactions": {
+      "get": {
+        "tags": [
+          "06 · Store operations"
+        ],
+        "summary": "Transactions",
+        "description": "List persisted bills and pending states without exposing another store.",
+        "operationId": "transactions_api_transactions_get",
+        "parameters": [
+          {
+            "name": "store_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Code"
+            },
+            "example": "HSR"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/checkouts/{identifier}/detail": {
+      "get": {
+        "tags": [
+          "03 · Confirm and inspect"
+        ],
+        "summary": "5. Compare prepared payload with the source order",
+        "description": "Reads local checkout/quote/refund_attempts and GETs Shopify orders/{id}.json when an order ID exists. Checkout duration is on the checkout row. Expand quote.order_payload for prepared source fields; completion additionally sends transactions. Expand order for the actual returned source record. order.refunds proves the Shopify refund exists; compare it with the local refund attempt and IDs.",
+        "operationId": "detail_api_checkouts__identifier__detail_get",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutEvidenceSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/checkouts/{identifier}/cancel": {
+      "post": {
+        "tags": [
+          "06 · Store operations"
+        ],
+        "summary": "Cancel",
+        "description": "Cancel an unpaid draft and retain its invoice number in the register.",
+        "operationId": "cancel_api_checkouts__identifier__cancel_post",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/draft": {
+      "get": {
+        "tags": [
+          "01 · Durable local records"
+        ],
+        "summary": "Resume the latest cashier draft",
+        "description": "GET returns the current user's resumable draft. PUT saves an append-only cart_snapshots version with draft_id, actor username/staff ID, created/saved timestamps and time since the prior save. The drafts table is only the latest resume pointer; history is available from /api/drafts/history.",
+        "operationId": "draft_api_draft_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "01 · Durable local records"
+        ],
+        "summary": "Resume the latest cashier draft",
+        "description": "GET returns the current user's resumable draft. PUT saves an append-only cart_snapshots version with draft_id, actor username/staff ID, created/saved timestamps and time since the prior save. The drafts table is only the latest resume pointer; history is available from /api/drafts/history.",
+        "operationId": "save_draft_api_draft_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/draft/metadata": {
+      "get": {
+        "tags": [
+          "01 · Durable local records"
+        ],
+        "summary": "Read the active draft ID and timestamps",
+        "description": "Returns lifecycle and actor metadata separately so the existing GET /api/draft cart payload contract remains unchanged.",
+        "operationId": "draft_metadata_api_draft_metadata_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/drafts/history": {
+      "get": {
+        "tags": [
+          "01 · Durable local records"
+        ],
+        "summary": "Inspect all saved draft versions",
+        "description": "Reads SQLite cart_snapshots joined to checkouts and the returned Shopify order reference. The listing omits cart contents and phone numbers; full payloads remain in the local SQLite database and cart_tracking view.",
+        "operationId": "draft_history_api_drafts_history_get",
+        "parameters": [
+          {
+            "name": "store_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Store Code"
+            },
+            "example": "HSR"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/prescriptions": {
+      "post": {
+        "tags": [
+          "01 · Durable local records"
+        ],
+        "summary": "Record a clinician-authored prescription",
+        "description": "Writes the Rx ID, normalized customer phone, authenticated username, staff ID, store and creation time into SQLite prescriptions. Local clinical additions are merged into customer prescription lookup.",
+        "operationId": "prescription_api_prescriptions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/prescriptions/history": {
+      "get": {
+        "tags": [
+          "01 · Durable local records"
+        ],
+        "summary": "Inspect prescription authorship",
+        "description": "Returns Rx ID, customer ID, valid-through date, author, staff ID, store and timestamp without disclosing phone numbers.",
+        "operationId": "prescription_history_api_prescriptions_history_get",
+        "parameters": [
+          {
+            "name": "store_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Store Code"
+            },
+            "example": "HSR"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/remakes/prepare": {
+      "post": {
+        "tags": [
+          "06 · Store operations"
+        ],
+        "summary": "Remake",
+        "description": "Prepare a linked lens-only remake and retain its cost owner and approver.",
+        "operationId": "remake_api_remakes_prepare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemakeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/till": {
+      "get": {
+        "tags": [
+          "06 · Store operations"
+        ],
+        "summary": "Till",
+        "description": "Display expected cash from source transactions and local expenses.",
+        "operationId": "till_api_till_get",
+        "parameters": [
+          {
+            "name": "store_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Code"
+            },
+            "example": "HSR"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/till/{action}": {
+      "post": {
+        "tags": [
+          "05 · Source reports"
+        ],
+        "summary": "Open, record paid-in or expense, and close a drawer",
+        "description": "Actions: open, paid-in, expense (paid-out), close. Amounts are integer paise. Paid-ins/expenses require a positive amount and a reason of at least three characters; they record the authenticated actor. Expected cash includes paid-ins without treating them as sales revenue. Close requires manager/admin and rejects unresolved financial operations.",
+        "operationId": "till_action_api_till__action__post",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Action"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/reports": {
+      "get": {
+        "tags": [
+          "05 · Source reports"
+        ],
+        "summary": "7. Read Shopify back and reconcile the result",
+        "description": "Reads source orders and nested refunds. Uses Asia/Kolkata order-day sales and refund-event-day collections, with channel attribution and payment-to-order deltas. Compare before and after refund. Not calculated merely from local checkout rows.",
+        "operationId": "reports_api_reports_get",
+        "parameters": [
+          {
+            "name": "day",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Day"
+            }
+          },
+          {
+            "name": "store_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Store Code"
+            },
+            "example": "HSR"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/reports/export": {
+      "get": {
+        "tags": [
+          "05 · Source reports"
+        ],
+        "summary": "Download the selected date as a CSV",
+        "description": "Shopify-derived bill count, gross, taxable, tax, discount, refunds and cash/card/UPI totals. basis=day_end matches the original order-date report, including all refunds on those orders. basis=daily matches the website's refund-event-date collection summary. Store roles are restricted to their own store; central roles can download all seven stores and combined totals.",
+        "operationId": "export_report_api_reports_export_get",
+        "parameters": [
+          {
+            "name": "day",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Day"
+            }
+          },
+          {
+            "name": "store_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Store Code"
+            },
+            "example": "HSR"
+          },
+          {
+            "name": "basis",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "day_end",
+                "daily"
+              ],
+              "type": "string",
+              "default": "day_end",
+              "title": "Basis"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Downloadable Shopify-derived report.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/register": {
+      "get": {
+        "tags": [
+          "06 · Store operations"
+        ],
+        "summary": "Register",
+        "description": "Expose every invoice allocation including cancelled numbers.",
+        "operationId": "register_api_register_get",
+        "parameters": [
+          {
+            "name": "store_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Code"
+            },
+            "example": "HSR"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/evidence": {
+      "get": {
+        "tags": [
+          "07 · Demo evidence"
+        ],
+        "summary": "Evidence",
+        "description": "Show acceptance criteria and measured mock latency without a production claim.",
+        "operationId": "evidence_api_evidence_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/audit": {
+      "get": {
+        "tags": [
+          "06 · Store operations"
+        ],
+        "summary": "Audit Log",
+        "description": "Restrict cross-store audit history to central finance and administrators.",
+        "operationId": "audit_log_api_audit_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/outbox": {
+      "get": {
+        "tags": [
+          "06 · Store operations"
+        ],
+        "summary": "Outbox",
+        "description": "Distinguish reviewable queued messages from actual SMTP delivery.",
+        "operationId": "outbox_api_outbox_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    },
+    "/api/reports/digest": {
+      "post": {
+        "tags": [
+          "05 · Source reports"
+        ],
+        "summary": "Digest",
+        "description": "Generate a repeat-safe founder report preview for a selected day.",
+        "operationId": "digest_api_reports_digest_post",
+        "parameters": [
+          {
+            "name": "day",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Day"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in using POST /auth/login first."
+          },
+          "403": {
+            "description": "Role/store access or CSRF check rejected the request."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AmountRequest": {
+        "properties": {
+          "store_code": {
+            "type": "string",
+            "title": "Store Code"
+          },
+          "amount_paise": {
+            "type": "integer",
+            "maximum": 100000000.0,
+            "minimum": 0.0,
+            "title": "Amount Paise"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "store_code",
+          "amount_paise"
+        ],
+        "title": "AmountRequest"
+      },
+      "Credentials": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Credentials"
+      },
+      "CustomerLookupRequest": {
+        "properties": {
+          "phone": {
+            "type": "string",
+            "title": "Phone",
+            "description": "Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.",
+            "examples": [
+              "+919000000005"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "phone"
+        ],
+        "title": "CustomerLookupRequest"
+      },
+      "CustomerLookupResponse": {
+        "properties": {
+          "customer": {
+            "$ref": "#/components/schemas/CustomerRecord"
+          },
+          "prescriptions": {
+            "items": {
+              "$ref": "#/components/schemas/PrescriptionRecord"
+            },
+            "type": "array",
+            "title": "Prescriptions",
+            "description": "Source plus locally authored records. Not all are current; sale preparation chooses the latest unexpired record."
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer",
+          "prescriptions"
+        ],
+        "title": "CustomerLookupResponse"
+      },
+      "CustomerRecord": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Source customer ID; use as stable identity, not as a phone number."
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone",
+            "description": "Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.",
+            "examples": [
+              "+919000000005"
+            ]
+          },
+          "first_name": {
+            "type": "string",
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "title": "Last Name"
+          },
+          "tags": {
+            "type": "string",
+            "title": "Tags",
+            "default": ""
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "phone",
+          "first_name",
+          "last_name"
+        ],
+        "title": "CustomerRecord"
+      },
+      "EyeInput": {
+        "properties": {
+          "sph": {
+            "anyOf": [
+              {
+                "type": "number",
+                "multipleOf": 0.25,
+                "maximum": 30.0,
+                "minimum": -30.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Sph",
+            "description": "Sphere in diopters"
+          },
+          "cyl": {
+            "anyOf": [
+              {
+                "type": "number",
+                "multipleOf": 0.25,
+                "maximum": 12.0,
+                "minimum": -12.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Cyl",
+            "description": "Cylinder in diopters"
+          },
+          "axis": {
+            "type": "integer",
+            "multipleOf": 5.0,
+            "maximum": 180.0,
+            "minimum": 0.0,
+            "title": "Axis"
+          },
+          "add": {
+            "anyOf": [
+              {
+                "type": "number",
+                "multipleOf": 0.25,
+                "maximum": 5.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Add"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sph",
+          "cyl",
+          "axis",
+          "add"
+        ],
+        "title": "EyeInput"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "PrepareRequest": {
+        "properties": {
+          "phone": {
+            "type": "string",
+            "title": "Phone",
+            "description": "Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.",
+            "examples": [
+              "+919000000005"
+            ]
+          },
+          "store_code": {
+            "type": "string",
+            "title": "Store Code"
+          },
+          "staff_id": {
+            "type": "string",
+            "title": "Staff Id"
+          },
+          "variant_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Variant Ids"
+          },
+          "payment_method": {
+            "type": "string",
+            "title": "Payment Method",
+            "default": "upi"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel",
+            "default": "walk_in"
+          },
+          "checkout_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Id"
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Code"
+          },
+          "override_bps": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Bps",
+            "description": "Manager-entered discount in basis points (500 = 5%). Applies exactly as entered and exclusively of other offers; requires manager permission and a reason."
+          },
+          "selected_offer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Offer Id",
+            "description": "Optional offer_id from offers.json. Only this offer is applied after server validation. Omit to apply no coupon discount."
+          },
+          "members": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WearerSelection"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Members"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phone",
+          "store_code",
+          "staff_id",
+          "variant_ids"
+        ],
+        "title": "PrepareRequest"
+      },
+      "PrescriptionInput": {
+        "properties": {
+          "phone": {
+            "type": "string",
+            "title": "Phone",
+            "description": "Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.",
+            "examples": [
+              "+919000000005"
+            ]
+          },
+          "store_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store Code",
+            "description": "Store where the clinician entered this prescription; the frontend supplies the selected store."
+          },
+          "od": {
+            "$ref": "#/components/schemas/EyeInput"
+          },
+          "os": {
+            "$ref": "#/components/schemas/EyeInput"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date",
+            "title": "Valid Until",
+            "description": "Today through two years ahead; validated by the clinical endpoint."
+          }
+        },
+        "type": "object",
+        "required": [
+          "phone",
+          "od",
+          "os",
+          "valid_until"
+        ],
+        "title": "PrescriptionInput"
+      },
+      "PrescriptionRecord": {
+        "properties": {
+          "rx_id": {
+            "type": "string",
+            "title": "Rx Id"
+          },
+          "customer_id": {
+            "type": "integer",
+            "title": "Customer Id"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone",
+            "description": "Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.",
+            "examples": [
+              "+919000000005"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "description": "Issued date or timestamp; used when selecting the latest valid prescription."
+          },
+          "valid_until": {
+            "type": "string",
+            "title": "Valid Until"
+          },
+          "od": {
+            "$ref": "#/components/schemas/SourceEyeRecord",
+            "description": "Right eye"
+          },
+          "os": {
+            "$ref": "#/components/schemas/SourceEyeRecord",
+            "description": "Left eye"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "rx_id",
+          "customer_id",
+          "phone",
+          "date",
+          "valid_until",
+          "od",
+          "os"
+        ],
+        "title": "PrescriptionRecord"
+      },
+      "RefundPrepareRequest": {
+        "properties": {
+          "checkout_id": {
+            "type": "string",
+            "title": "Checkout Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "refund_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refund Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "checkout_id",
+          "reason"
+        ],
+        "title": "RefundPrepareRequest"
+      },
+      "RemakeRequest": {
+        "properties": {
+          "checkout_id": {
+            "type": "string",
+            "title": "Checkout Id"
+          },
+          "lens_variant_id": {
+            "type": "integer",
+            "title": "Lens Variant Id"
+          },
+          "wearer_phone": {
+            "type": "string",
+            "title": "Wearer Phone",
+            "description": "Indian mobile number. Accepts 9000000005, 919000000005, 09000000005 or +91 90000 00005; normalized to +919000000005.",
+            "examples": [
+              "+919000000005"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason"
+          },
+          "cost_owner": {
+            "type": "string",
+            "title": "Cost Owner"
+          },
+          "lab_cost_paise": {
+            "type": "integer",
+            "maximum": 100000000.0,
+            "minimum": 0.0,
+            "title": "Lab Cost Paise"
+          }
+        },
+        "type": "object",
+        "required": [
+          "checkout_id",
+          "lens_variant_id",
+          "wearer_phone",
+          "reason",
+          "cost_owner",
+          "lab_cost_paise"
+        ],
+        "title": "RemakeRequest"
+      },
+      "SourceEyeRecord": {
+        "properties": {
+          "sph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Sph"
+          },
+          "cyl": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Cyl"
+          },
+          "axis": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Axis"
+          },
+          "add": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "sph",
+          "cyl"
+        ],
+        "title": "SourceEyeRecord"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WearerSelection": {
+        "properties": {
+          "phone": {
+            "type": "string",
+            "title": "Phone",
+            "description": "Existing wearer phone; their own latest complete valid prescription is used.",
+            "examples": [
+              "+919000000004"
+            ]
+          },
+          "variant_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Variant Ids",
+            "description": "Selected frame and lens variant IDs. Every optical frame needs exactly one paired lens. Sunglasses can be ready-to-wear or paired with one prescription lens.",
+            "examples": [
+              [
+                91000003,
+                91000083
+              ]
+            ]
+          },
+          "lens_only_variant_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Lens Only Variant Ids",
+            "description": "Lens pairs sold without frames. Each item is one lens-pair variant and is validated against this wearer's current prescription.",
+            "examples": [
+              [
+                91000083
+              ]
+            ]
+          },
+          "frame_only_variant_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Frame Only Variant Ids",
+            "description": "Explicit frame-only purchases. These frames have no lens or prescription attached; move a frame into variant_ids with its lens to sell a complete prescription pair.",
+            "examples": [
+              [
+                91000003
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "phone"
+        ],
+        "title": "WearerSelection"
+      },
+      "OfferDecisionSchema": {
+        "properties": {
+          "offer_id": {
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "applied": {
+            "title": "Applied",
+            "type": "boolean"
+          },
+          "amount_paise": {
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "allocations_paise": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Allocations Paise",
+            "type": "array"
+          }
+        },
+        "required": [
+          "offer_id",
+          "applied",
+          "amount_paise",
+          "reason",
+          "allocations_paise"
+        ],
+        "title": "OfferDecisionSchema",
+        "type": "object"
+      },
+      "QuoteResult": {
+        "properties": {
+          "checkout_id": {
+            "description": "Copy this into the complete and detail endpoints.",
+            "title": "Checkout Id",
+            "type": "string"
+          },
+          "invoice_no": {
+            "description": "Reserved local per-store invoice number; not a Shopify order number.",
+            "title": "Invoice No",
+            "type": "string"
+          },
+          "total_paise": {
+            "description": "Exact amount to confirm. Divide by 100 for INR.",
+            "title": "Total Paise",
+            "type": "integer"
+          },
+          "tax_paise": {
+            "description": "GST already included in total_paise.",
+            "title": "Tax Paise",
+            "type": "integer"
+          },
+          "offers": {
+            "items": {
+              "$ref": "#/components/schemas/OfferDecisionSchema"
+            },
+            "title": "Offers",
+            "type": "array"
+          },
+          "status": {
+            "description": "draft: no payment or source order has been created.",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "checkout_id",
+          "invoice_no",
+          "total_paise",
+          "tax_paise",
+          "offers",
+          "status"
+        ],
+        "title": "QuoteResult",
+        "type": "object"
+      },
+      "CheckoutStateSchema": {
+        "properties": {
+          "checkout_id": {
+            "title": "Checkout Id",
+            "type": "string"
+          },
+          "store_code": {
+            "title": "Store Code",
+            "type": "string"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "payment_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Ref"
+          },
+          "payment_charge_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Charge Id"
+          },
+          "shopify_order_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shopify Order Id"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "error_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Detail"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          },
+          "checkout_elapsed_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Checkout Elapsed Ms"
+          },
+          "timing_recorded_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timing Recorded At"
+          }
+        },
+        "required": [
+          "checkout_id",
+          "store_code",
+          "customer_id",
+          "status",
+          "payment_ref",
+          "payment_charge_id",
+          "shopify_order_id",
+          "invoice_no",
+          "error_detail",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CheckoutStateSchema",
+        "type": "object"
+      },
+      "RefundPreviewSchema": {
+        "properties": {
+          "refund_id": {
+            "title": "Refund Id",
+            "type": "string"
+          },
+          "checkout_id": {
+            "title": "Checkout Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "amount_paise": {
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "tax_reversed_paise": {
+            "title": "Tax Reversed Paise",
+            "type": "integer"
+          },
+          "frame_restocked_on_shopify_success": {
+            "description": "Intended behavior on completion; prepare has NOT restocked anything.",
+            "title": "Frame Restocked On Shopify Success",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "refund_id",
+          "checkout_id",
+          "status",
+          "amount_paise",
+          "tax_reversed_paise",
+          "frame_restocked_on_shopify_success"
+        ],
+        "title": "RefundPreviewSchema",
+        "type": "object"
+      },
+      "CheckoutEvidenceSchema": {
+        "properties": {
+          "checkout": {
+            "$ref": "#/components/schemas/CheckoutStateSchema"
+          },
+          "quote": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Persisted quote. order_payload is the order body prepared for Shopify; lines show each wearer, HSN and tax. Completion adds transactions before sending.",
+            "title": "Quote"
+          },
+          "order": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Live GET of the source Shopify mock order after completion, including line IDs, transactions and refunds; null before an order exists.",
+            "title": "Order"
+          },
+          "refunds": {
+            "description": "Local durable refund attempts, including prepared payload_json and source IDs.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Refunds",
+            "type": "array"
+          },
+          "invoice": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Immutable issued invoice in SQLite; null for an unpaid draft.",
+            "title": "Invoice"
+          },
+          "refund_events": {
+            "description": "Append-only refund state changes, actor references and synchronization times.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Refund Events",
+            "type": "array"
+          }
+        },
+        "required": [
+          "checkout",
+          "quote",
+          "order",
+          "refunds"
+        ],
+        "title": "CheckoutEvidenceSchema",
+        "type": "object"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "00 · Access",
+      "description": "Start with POST /auth/login. Swagger itself is sufficient; no frontend login is needed. Use provisioned credentials. The browser stores the HttpOnly cookie and Swagger automatically attaches the session CSRF token."
+    },
+    {
+      "name": "01 · Read source data",
+      "description": "Read customer/catalog/inventory before quoting. Shopify provides commercial data; prescriptions and staff come from the store-tool mock. Offers and GST rules are local configuration."
+    },
+    {
+      "name": "02 · Quote — no payment",
+      "description": "Validate inputs, calculate offers and tax, then persist a quote and reserve an invoice number locally. No charge or Shopify order yet."
+    },
+    {
+      "name": "03 · Confirm and inspect",
+      "description": "Payment confirmation is a separate write. Inspect the saved quote and source order to explain exactly what came back from Shopify."
+    },
+    {
+      "name": "04 · Refund and reconcile",
+      "description": "Preview first, then refund payment and write the source refund. Uncertain writes require inspection; they are not blindly repeated."
+    },
+    {
+      "name": "05 · Source reports",
+      "description": "Read Shopify orders/refunds back to produce reconciled reports. The new report uses IST and refund-event dates; the original day-end contract is preserved."
+    },
+    {
+      "name": "06 · Store operations",
+      "description": "Clinical entry, remakes, cash drawer, saved carts, register and audit APIs use the same permissions as the UI."
+    },
+    {
+      "name": "07 · Demo evidence",
+      "description": "Coverage, local performance evidence and basic application health."
+    }
+  ]
+}

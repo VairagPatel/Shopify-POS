@@ -47,9 +47,9 @@ def main():
         )
         customer.locator(".opblock-summary").click()
         customer.get_by_role("button", name="Try it out").click()
-        customer.locator(".parameters-col_description input").fill("+919000000005")
+        customer.locator("textarea").fill(json.dumps({"phone": "9000000005"}))
         with page.expect_response(
-            lambda response: "/api/customers?" in response.url
+            lambda response: response.url.endswith("/api/customers") and response.request.method == "POST"
         ) as customer_response:
             customer.get_by_role("button", name="Execute", exact=True).click()
         assert customer_response.value.status == 200

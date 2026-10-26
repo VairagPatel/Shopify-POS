@@ -95,7 +95,10 @@ def test_staff_impersonation_denied(production_env):
 def test_standalone_frames_are_not_offer_pairs(production_env):
     clients, _, _, _ = production_env
     response = clients("cashier").post(
-        "/sales/prepare", json=cart([91000003, 91000005, 91000083])
+        "/sales/prepare", json=cart([91000003, 91000083], members=[{
+            "phone": "+919000000004", "variant_ids": [91000003, 91000083],
+            "frame_only_variant_ids": [91000005],
+        }])
     )
     assert response.status_code == 200, response.text
     assert not any(

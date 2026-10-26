@@ -29,21 +29,20 @@ def main():
         page.wait_for_function("!state.busy")
         page.get_by_role("button", name="Start guided sale").click()
         page.wait_for_function("!state.busy")
-        for phone, frame in [("+919000000004", 91000005), ("+919000000007", 91000006)]:
+        for phone, frame in [("+919000000013", 91000005), ("+919000000015", 91000006)]:
             page.locator("#customer-form input[name=phone]").fill(phone)
             page.get_by_role("button", name="Add wearer").click()
             page.wait_for_function("!state.busy")
             frame = page.evaluate(
                 "state.data.catalog.find(item => item.eluno.line_type === 'frame' && item.eluno.rx_able && item.eluno.category !== 'sunglasses' && state.stock[item.inventory_item_id] > 0 && !state.cart.members.some(member => member.variant_ids.includes(item.id))).id"
             )
+            page.locator('[data-category="frame"]').click()
+            page.wait_for_function("!state.busy")
             page.locator(f'[data-product="{frame}"]').wait_for()
             page.locator(f'[data-product="{frame}"]').click()
             page.wait_for_function("!state.busy")
-            page.locator('[data-category="lens"]').click()
-            page.wait_for_function("!state.busy")
-            page.locator('[data-product="91000083"]').click()
-            page.wait_for_function("!state.busy")
-            page.locator('[data-category="frame"]').click()
+            page.locator('[data-action="add-configured-pair"]').wait_for()
+            page.locator('[data-action="add-configured-pair"]').click()
             page.wait_for_function("!state.busy")
         page.get_by_role("button", name="Review offers & GST").click()
         page.wait_for_function("!state.busy")
@@ -96,6 +95,8 @@ def main():
             (date.today() + timedelta(days=180)).isoformat()
         )
         assert page.locator("select[name=od_axis] option").count() == 37
+        page.locator("select[name=od_axis]").select_option("90")
+        page.locator("select[name=os_axis]").select_option("90")
         page.locator("input[name=od_sph]").fill("-3.25")
         page.locator("input[name=os_sph]").fill("-3")
         page.locator("input[name=od_add]").fill("2.5")
